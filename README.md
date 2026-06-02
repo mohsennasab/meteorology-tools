@@ -1,7 +1,7 @@
 # Storm Transposition Domain Tools
 
 Reproducible Jupyter notebooks for **stochastic storm-transposition (SST) domain selection** and
-**storm-catalog quality control**. The notebooks are watershed-agnostic — point them at any basin,
+**storm-catalog quality control**. The notebooks are watershed-agnostic. Point them at any basin,
 transposition domain, and storm catalog. They ship with a small example dataset so they run end-to-end
 out of the box, locally or in your browser on [mybinder.org](https://mybinder.org).
 
@@ -12,8 +12,9 @@ out of the box, locally or in your browser on [mybinder.org](https://mybinder.or
 ## Quick start
 
 **Run in your browser (no install).** Click the Binder badge above. `environment.yml` is detected
-automatically. The first launch builds the environment (a few minutes); later launches reuse the
-cached image.
+automatically. **Heads-up: the first few times the repo is opened on Binder, it takes ~5 minutes to
+build the project image** before the notebooks open. After that, launches reuse the cached image and
+start in seconds.
 
 **Run locally.**
 
@@ -112,6 +113,4 @@ basin.
 
 ## Attribution
 
-PRISM Climate Group, Oregon State University. AORC v1.1 (NOAA). SLAM-SIG transposition domains
-(Dewberry). USGS Watershed Boundary Dataset. Please retain the upstream attributions if you
-redistribute the bundled data.
+PRISM Climate Group, Oregon State University. AORC v1.1 (NOAA). SLAM-SIG transposition domains. USGS Watershed Boundary Dataset.
