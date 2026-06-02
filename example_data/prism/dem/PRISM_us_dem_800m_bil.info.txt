@@ -1,1 +1,0 @@
-The elevation data contained within this digital elevation model (DEM) grid were originally obtained from the USGS National Elevation Dataset (NED - http://ned.usgs.gov) at a higher resolution, and were processed to match the PRISM 800m grid resolution.

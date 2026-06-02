@@ -87,13 +87,18 @@ basin.
 | `watershed/` | `Upper-Tennessee_huc04.geojson`, `UpperTennessee.json` | USGS Watershed Boundary Dataset. |
 | `transposition_domains/` | `TD.AORC.0601.SLAM-SIG.{24,72}hr.2024.v1.*` shapefiles; `SLAM-SIG-GSL0-TD_valid.json`; `SLAM-SIG-GSL0-Intersection-TD_valid.json` | SLAM-SIG 2024 v1 transposition domains (Dewberry). |
 | `storm_catalog/` | `max_precip_locations.geojson` | A 72-hr storm event catalog (wettest AORC pixel per storm). |
-| `prism/annual/` | `prism_ppt_us_30s_2020_avg_30y.tif`, `prism_tdmean_us_30s_2020_avg_30y.tif` | [PRISM](https://prism.oregonstate.edu) 30-yr normals (1991–2020), 30-arcsec (~800 m), CONUS. |
-| `prism/dem/` | `PRISM_us_dem_800m_bil.*` | PRISM 800 m DEM, CONUS. |
+| `prism/annual/` | `prism_ppt_us_30s_2020_avg_30y.tif`, `prism_tdmean_us_30s_2020_avg_30y.tif` | [PRISM](https://prism.oregonstate.edu) 30-yr normals (1991–2020), CONUS. **Bundled copies are downsampled to ~5 km** (see note below). |
+| `prism/dem/` | `PRISM_us_dem_800m_bil.*` | PRISM DEM, CONUS, **downsampled to ~5 km**. |
 
-> **Heads-up on size:** `example_data/` is ~180 MB, almost all of it the full-CONUS PRISM rasters that
-> the `three_stage_sop` notebook needs for its CONUS-extent screening and maps. Expect the initial clone
-> and the first Binder build to take a few minutes. The `storm_catalog_maps` notebook uses none of the
-> PRISM data and is fast.
+> **⚠️ PRISM resolution — read this for local use.** The bundled PRISM rasters have been **downsampled
+> from their native 30-arcsec (~800 m) resolution to ~5 km** so the `three_stage_sop` notebook fits
+> within [mybinder.org](https://mybinder.org)'s ~2 GB memory limit and the repository stays small. The
+> methodology and the CONUS-extent maps are unchanged — only the raster detail is coarser, and the QA
+> numbers shift slightly. **For local or production runs, use the native 800 m PRISM 30-yr normals**
+> (free from [prism.oregonstate.edu](https://prism.oregonstate.edu)): replace the bundled files in
+> `example_data/prism/annual/` and `example_data/prism/dem/` with the full-resolution versions, **keeping
+> the bundled file names**, and the notebook picks them up automatically. The `storm_catalog_maps`
+> notebook uses no PRISM data.
 
 ---
 
