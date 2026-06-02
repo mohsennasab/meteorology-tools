@@ -1,0 +1,12 @@
+# Notebook-generated figures/tables (recreated on every run)
+outputs/
+
+# Jupyter / Python cruft
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.virtual_documents/
+
+# OS cruft
+.DS_Store
+Thumbs.db

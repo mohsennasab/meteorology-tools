@@ -1,0 +1,22 @@
+# Conda environment for local use and for mybinder.org (repo2docker auto-detects this file).
+# Versions are left unpinned so Binder can solve quickly; the stack below was developed and
+# tested with the versions noted in the README ("Tested with").
+name: meteorology-tools
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - geopandas
+  - shapely
+  - rasterio
+  - pyproj
+  - matplotlib
+  - matplotlib-scalebar
+  - contextily
+  - mapclassify
+  - jupyterlab
+  - notebook
+  - pip
