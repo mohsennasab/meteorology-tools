@@ -1,6 +1,9 @@
 # Notebook-generated figures/tables (recreated on every run)
 outputs/
 
+# Large external IBTrACS shapefile. The notebook downloads this from NOAA if missing.
+example_data/IBTrACS_Lines/
+
 # Jupyter / Python cruft
 .ipynb_checkpoints/
 __pycache__/

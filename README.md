@@ -26,7 +26,7 @@ conda activate meteorology-tools
 jupyter lab
 ```
 
-Then open either notebook in `notebooks/` and run all cells.
+Then open a notebook in `notebooks/` and run all cells.
 
 ---
 
@@ -36,6 +36,7 @@ Then open either notebook in `notebooks/` and run all cells.
 |---|---|---|
 | [`notebooks/three_stage_sop_domain_selection.ipynb`](notebooks/three_stage_sop_domain_selection.ipynb) | A **three-stage, SOP-driven domain-selection methodology**. Stage 1 hard-filters candidate transposition domains on Area Ratio (AR > 5); Stage 2 supports a meteorologist's visual review against the basin's PRISM precipitation / elevation / dewpoint envelope; Stage 3 produces descriptive QA statistics for the selected polygon. Ends with CONUS-extent PRISM maps overlaid with the domain boundaries. | Candidate transposition-domain shapefiles, basin polygon, PRISM 30-yr normals (precipitation, dewpoint, DEM). |
 | [`notebooks/storm_catalog_maps.ipynb`](notebooks/storm_catalog_maps.ipynb) | A **configurable storm-catalog visualization & QC framework**. Produces a max-pixel plausibility flag, a storms-per-year bar chart, magnitude- and season-faceted max-precipitation maps, a hex-bin density heatmap, an event calendar, and a statistical distribution / max-to-mean ratio QC section. | A storm catalog's `max_precip_locations.geojson`, the watershed polygon, and the transposition-domain polygon. |
+| [`notebooks/ibtracs_td_screening.ipynb`](notebooks/ibtracs_td_screening.ipynb) | An **IBTrACS transposition-domain screening notebook**. Clips NOAA/NCEI IBTrACS storm-track lines to a 1-mile buffered TD, summarizes TC-lifecycle versus NT labels, and maps the clipped tracks by TC/NT and `USA_SSHS` class. | Watershed polygon, TD and valid TD polygons, and NOAA/NCEI IBTrACS line tracks. The notebook downloads IBTrACS from NOAA if the local shapefile is missing. |
 
 Both notebooks resolve their data paths automatically by walking up from the working directory to find
 `example_data/`, so they run unchanged whether launched from the repository root or from inside
@@ -88,6 +89,7 @@ basin.
 | `watershed/` | `Upper-Tennessee_huc04.geojson`, `UpperTennessee.json` | USGS Watershed Boundary Dataset. |
 | `transposition_domains/` | `TD.AORC.0601.SLAM-SIG.{24,72}hr.2024.v1.*` shapefiles; `SLAM-SIG-GSL0-TD_valid.json`; `SLAM-SIG-GSL0-Intersection-TD_valid.json` | SLAM-SIG 2024 v1 transposition domains (Dewberry). |
 | `storm_catalog/` | `max_precip_locations.geojson` | A 72-hr storm event catalog (wettest AORC pixel per storm). |
+| `IBTrACS_Lines/` | `IBTrACS.since1980.list.v04r01.lines.*` | NOAA/NCEI IBTrACS v04r01 line tracks. This folder is git-ignored because the shapefile is large; the notebook downloads it if missing. |
 | `prism/annual/` | `prism_ppt_us_30s_2020_avg_30y.tif`, `prism_tdmean_us_30s_2020_avg_30y.tif` | [PRISM](https://prism.oregonstate.edu) 30-yr normals (1991–2020), CONUS. **Bundled copies are downsampled to ~5 km** (see note below). |
 | `prism/dem/` | `PRISM_us_dem_800m_bil.*` | PRISM DEM, CONUS, **downsampled to ~5 km**. |
 
