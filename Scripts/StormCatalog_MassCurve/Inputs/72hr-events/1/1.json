@@ -1,0 +1,97 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "id": "1",
+  "properties": {
+    "start_datetime": "2024-09-26T00:00:00Z",
+    "end_datetime": "2024-09-29T00:00:00Z",
+    "aorc:statistics": {
+      "min": 2.79,
+      "mean": 8.43,
+      "max": 21.95,
+      "units": "inches"
+    },
+    "aorc:transform": {
+      "a": 1.0,
+      "b": 0.0,
+      "c": 0.6833059999994475,
+      "d": 0.0,
+      "e": 1.0,
+      "f": -0.6749729999999996
+    },
+    "aorc:max_precip_location": {
+      "latitude": 35.7994,
+      "longitude": -82.1686
+    },
+    "datetime": "2024-09-26T00:00:00Z"
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      -82.43698339535771,
+      35.39387820219415
+    ]
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    }
+  ],
+  "assets": {
+    "AORC": {
+      "href": "s3://noaa-nws-aorc-v1-1-1km/2024.zarr",
+      "type": "application/vnd+zarr",
+      "start_datetime": "2024-01-01T00:00:00+00:00",
+      "end_datetime": "2025-01-01T00:00:00+00:00",
+      "storage:platform": "AWS",
+      "roles": [
+        "application/vnd+zarr"
+      ]
+    },
+    "thumbnail": {
+      "href": "1.thumbnail.png",
+      "type": "image/png",
+      "roles": [
+        "thumbnail"
+      ]
+    },
+    "20240926.dss": {
+      "href": "/home/ubuntu/stormhub/catalogs/upper-tennessee/72hr-events/1/20240926.dss",
+      "type": "application/x-dss",
+      "title": "20240926.dss",
+      "description": "DSS file containing meteorological data for storm period.",
+      "roles": "data"
+    },
+    "mass_curve": {
+      "href": "1.mass_curve.png",
+      "type": "image/png",
+      "roles": [
+        "thumbnail"
+      ],
+      "title": "Mass Curve"
+    }
+  },
+  "bbox": [
+    -86.14758750003546,
+    32.8536525,
+    -78.43956250004169,
+    38.5700905
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
+    "https://stac-extensions.github.io/storage/v1.0.0/schema.json"
+  ],
+  "collection": "72hr-events"
+}

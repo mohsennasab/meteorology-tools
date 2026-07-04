@@ -1,22 +1,18 @@
-# Storm Transposition Domain Tools
+﻿# Storm Transposition Domain Tools
 
-Reproducible Jupyter notebooks for **stochastic storm-transposition (SST) domain selection** and
-**storm-catalog quality control**. The notebooks are watershed-agnostic. Point them at any basin,
-transposition domain, and storm catalog. They ship with a small example dataset so they run end-to-end
-out of the box, locally or in your browser on [mybinder.org](https://mybinder.org).
+This repository contains notebooks and scripts used for storm transposition domain review, storm catalog checks, Atlas 14 basin statistics, and storm mass curve plots.
+
+The notebooks include a small example dataset so they can run on Binder or on a local machine. The scripts in `Scripts/` are standalone workflows. Some of them need local paths, a conda environment, and network access.
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mohsennasab/meteorology-tools/main?labpath=notebooks)
 
----
+## Quick Start
 
-## Quick start
+Run in your browser:
 
-**Run in your browser (no install).** Click the Binder badge above. `environment.yml` is detected
-automatically. **Heads-up: the first few times the repo is opened on Binder, it takes ~5 minutes to
-build the project image** before the notebooks open. After that, launches reuse the cached image and
-start in seconds.
+Click the Binder badge above. The first launch can take a few minutes while Binder builds the environment. Later launches are usually faster.
 
-**Run locally.**
+Run locally:
 
 ```bash
 git clone https://github.com/mohsennasab/meteorology-tools.git
@@ -26,93 +22,89 @@ conda activate meteorology-tools
 jupyter lab
 ```
 
-Then open a notebook in `notebooks/` and run all cells.
-
----
+Then open a notebook in `notebooks/` and run the cells.
 
 ## Notebooks
 
-| Notebook | What it does | Data it uses |
-|---|---|---|
-| [`notebooks/three_stage_sop_domain_selection.ipynb`](notebooks/three_stage_sop_domain_selection.ipynb) | A **three-stage, SOP-driven domain-selection methodology**. Stage 1 hard-filters candidate transposition domains on Area Ratio (AR > 5); Stage 2 supports a meteorologist's visual review against the basin's PRISM precipitation / elevation / dewpoint envelope; Stage 3 produces descriptive QA statistics for the selected polygon. Ends with CONUS-extent PRISM maps overlaid with the domain boundaries. | Candidate transposition-domain shapefiles, basin polygon, PRISM 30-yr normals (precipitation, dewpoint, DEM). |
-| [`notebooks/storm_catalog_maps.ipynb`](notebooks/storm_catalog_maps.ipynb) | A **configurable storm-catalog visualization & QC framework**. Produces a max-pixel plausibility flag, a storms-per-year bar chart, magnitude- and season-faceted max-precipitation maps, a hex-bin density heatmap, an event calendar, and a statistical distribution / max-to-mean ratio QC section. | A storm catalog's `max_precip_locations.geojson`, the watershed polygon, and the transposition-domain polygon. |
-| [`notebooks/ibtracs_td_screening.ipynb`](notebooks/ibtracs_td_screening.ipynb) | An **IBTrACS transposition-domain screening notebook**. Clips NOAA/NCEI IBTrACS storm-track lines to a 1-mile buffered TD, summarizes TC-lifecycle versus NT labels, and maps the clipped tracks by TC/NT and `USA_SSHS` class. | Watershed polygon, TD and valid TD polygons, and NOAA/NCEI IBTrACS line tracks. The notebook downloads IBTrACS from NOAA if the local shapefile is missing. |
+| Notebook | Purpose |
+|---|---|
+| `notebooks/three_stage_sop_domain_selection.ipynb` | Reviews candidate transposition domains using area ratio, PRISM precipitation, elevation, dewpoint, and map-based checks. |
+| `notebooks/storm_catalog_maps.ipynb` | Creates storm catalog maps and QC plots, including max precipitation locations, seasonal views, density maps, calendars, and distribution checks. |
+| `notebooks/ibtracs_td_screening.ipynb` | Screens IBTrACS tropical cyclone tracks against a transposition domain and maps the clipped tracks. |
 
-Both notebooks resolve their data paths automatically by walking up from the working directory to find
-`example_data/`, so they run unchanged whether launched from the repository root or from inside
-`notebooks/` (as Binder does). To run them on **your own** watershed / domain / catalog, edit the few
-path variables in each notebook's **setup cell** near the top.
+To use your own basin, domain, or catalog, edit the path variables in the setup cell near the top of each notebook.
 
----
+## Scripts
 
-## Repository layout
+The `Scripts/` folder contains standalone workflows with their own README files.
 
+| Folder | Contents |
+|---|---|
+| `Scripts/Atlas14_Pipeline/` | Downloads NOAA Atlas 14 rasters, mosaics selected volumes, clips to a watershed, computes basin statistics, and writes a frequency curve. |
+| `Scripts/StormCatalog_MassCurve/` | Reads a storm catalog, fetches AORC precipitation, and regenerates mass curve PNGs for storm items. |
+
+See each folder's `README.md` before running the scripts. The mass curve script should be run in the `stormhub` conda environment because it needs project-specific libraries such as `stormhub` and `hecdss`.
+
+## Repository Layout
+
+```text
+meteorology-tools/
+  notebooks/
+  example_data/
+  documents/
+  outputs/
+  Scripts/
+    Atlas14_Pipeline/
+      atlas14_pipeline.py
+      README.md
+    StormCatalog_MassCurve/
+      mass_curve.py
+      README.md
+      Inputs/
+  environment.yml
+  README.md
 ```
-.
-├── notebooks/                 # the two runnable notebooks
-├── example_data/              # everything the notebooks read (see "Data" below)
-│   ├── watershed/             # basin polygons
-│   ├── transposition_domains/ # transposition-domain shapefiles + valid-domain polygons
-│   ├── storm_catalog/         # storm-catalog max-precip locations
-│   └── prism/                 # PRISM 30-yr normals (annual precip, dewpoint, 800 m DEM)
-├── documents/                 # supporting write-ups (add as needed)
-├── outputs/                   # figures/tables written at run time (git-ignored)
-├── environment.yml            # conda environment for local use + Binder (repo2docker)
-└── README.md
-```
 
----
+## Example Data
+
+The notebooks use the example data under `example_data/`.
+
+Main folders:
+
+- `watershed/`: basin polygons
+- `transposition_domains/`: transposition domain shapefiles and valid-domain polygons
+- `storm_catalog/`: storm catalog max precipitation locations
+- `IBTrACS_Lines/`: IBTrACS line tracks when available locally
+- `prism/`: PRISM precipitation, dewpoint, and DEM rasters used by the domain review notebook
+
+Some PRISM files are downsampled so the notebooks run more easily on Binder. For local production work, replace them with the native-resolution PRISM rasters while keeping the same filenames.
 
 ## Requirements
 
-A Python 3.11 scientific-geospatial stack, most easily installed with the bundled `environment.yml`
-(see [Quick start](#quick-start)). Key libraries: `geopandas`, `rasterio`, `shapely`, `pyproj`,
-`scipy`, `matplotlib`, `matplotlib-scalebar`, `contextily`, `mapclassify`, `jupyterlab`.
+For notebooks, use:
 
-**Tested with:** Python 3.11, numpy 2.4, pandas 3.0, geopandas 1.1, rasterio 1.4, shapely 2.1,
-scipy 1.17, matplotlib 3.10, contextily 1.7, mapclassify 2.10.
+```bash
+conda env create -f environment.yml
+conda activate meteorology-tools
+```
 
-> **Internet note:** the maps use [`contextily`](https://contextily.readthedocs.io) to fetch
-> OpenStreetMap / CartoDB basemap tiles at run time, so those cells need network access (Binder has it).
-> Everything else runs fully offline against `example_data/`.
+Key notebook libraries include `geopandas`, `rasterio`, `shapely`, `pyproj`, `scipy`, `matplotlib`, `contextily`, `mapclassify`, and `jupyterlab`.
 
----
+Some script workflows need additional project environments. For example, `Scripts/StormCatalog_MassCurve/mass_curve.py` should be run with:
 
-## Data
+```bash
+conda activate stormhub
+python Scripts/StormCatalog_MassCurve/mass_curve.py
+```
 
-The notebooks ship with a complete example dataset under `example_data/` so they run immediately. Swap
-in your own files (and update the path variables in each notebook's setup cell) to analyze a different
-basin.
+## Notes
 
-| Folder | Files | Source |
-|---|---|---|
-| `watershed/` | `Upper-Tennessee_huc04.geojson`, `UpperTennessee.json` | USGS Watershed Boundary Dataset. |
-| `transposition_domains/` | `TD.AORC.0601.SLAM-SIG.{24,72}hr.2024.v1.*` shapefiles; `SLAM-SIG-GSL0-TD_valid.json`; `SLAM-SIG-GSL0-Intersection-TD_valid.json` | SLAM-SIG 2024 v1 transposition domains (Dewberry). |
-| `storm_catalog/` | `max_precip_locations.geojson` | A 72-hr storm event catalog (wettest AORC pixel per storm). |
-| `IBTrACS_Lines/` | `IBTrACS.since1980.list.v04r01.lines.*` | NOAA/NCEI IBTrACS v04r01 line tracks. This folder is git-ignored because the shapefile is large; the notebook downloads it if missing. |
-| `prism/annual/` | `prism_ppt_us_30s_2020_avg_30y.tif`, `prism_tdmean_us_30s_2020_avg_30y.tif` | [PRISM](https://prism.oregonstate.edu) 30-yr normals (1991–2020), CONUS. **Bundled copies are downsampled to ~5 km** (see note below). |
-| `prism/dem/` | `PRISM_us_dem_800m_bil.*` | PRISM DEM, CONUS, **downsampled to ~5 km**. |
-
-> **⚠️ PRISM resolution — read this for local use.** The bundled PRISM rasters have been **downsampled
-> from their native 30-arcsec (~800 m) resolution to ~5 km** so the `three_stage_sop` notebook fits
-> within [mybinder.org](https://mybinder.org)'s ~2 GB memory limit and the repository stays small. The
-> methodology and the CONUS-extent maps are unchanged — only the raster detail is coarser, and the QA
-> numbers shift slightly. **For local or production runs, use the native 800 m PRISM 30-yr normals**
-> (free from [prism.oregonstate.edu](https://prism.oregonstate.edu)): replace the bundled files in
-> `example_data/prism/annual/` and `example_data/prism/dem/` with the full-resolution versions, **keeping
-> the bundled file names**, and the notebook picks them up automatically. The `storm_catalog_maps`
-> notebook uses no PRISM data.
-
----
-
-## Coordinate-reference-system conventions
-
-- **EPSG:4269 / 4326** — geographic (PRISM clipping / vector I/O)
-- **EPSG:5070** — CONUS Albers equal-area (all area / area-ratio calculations)
-- **EPSG:3857** — Web Mercator (basemap-tile alignment)
-
----
+- Map basemaps use `contextily`, so those cells need internet access.
+- Atlas 14 downloads require internet access to NOAA.
+- Mass curve generation requires internet access to AORC data on S3.
+- Outputs created by notebooks are written to `outputs/`.
+- Script outputs are written in the folders configured inside each script.
 
 ## Attribution
 
-PRISM Climate Group, Oregon State University. AORC v1.1 (NOAA). SLAM-SIG transposition domains. USGS Watershed Boundary Dataset.
+Data sources include PRISM Climate Group, NOAA AORC, NOAA Atlas 14, NOAA/NCEI IBTrACS, USGS Watershed Boundary Dataset, and SLAM-SIG transposition domains.
