@@ -5,7 +5,7 @@ name: meteorology-tools
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.12
   - numpy
   - pandas
   - scipy
@@ -19,4 +19,29 @@ dependencies:
   - mapclassify
   - jupyterlab
   - notebook
+  - dask
+  - fiona
+  - ipykernel
   - pip
+  - pyarrow
+  - pytest
+  - requests
+  - rioxarray
+  - ruff
+  - xarray
+  - zarr
+  - pip:
+    - pystac
+    - dataretrieval
+    - duckdb
+    - nbconvert
+    - boto3
+    - leafmap
+    - netcdf4
+    - s3fs
+    - hecdss
+    - python-dotenv
+    - shapely
+    - contextily
+    - stac_geoparquet
+    - stormhub
