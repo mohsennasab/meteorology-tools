@@ -9,8 +9,11 @@ dependencies:
   - numpy
   - pandas
   - scipy
-  - geopandas
-  - shapely
+  - geopandas>=1.0.1
+  - shapely>=2.1.2
+  - geos
+  - proj
+  - proj-data
   - rasterio
   - pyproj
   - matplotlib
@@ -41,7 +44,5 @@ dependencies:
     - s3fs
     - hecdss
     - python-dotenv
-    - shapely
-    - contextily
     - stac_geoparquet
     - stormhub

@@ -61,7 +61,7 @@ CATALOG_DIR = Path("/workspaces/meteorology-tools/inputs/storm_catalog")
 
 # Base watershed GeoJSON used to transpose the watershed to each storm location.
 # This must be the same base watershed used when the storm catalog was created.
-BASE_WATERSHED_PATH = Path("/workspaces/meteorology-tools/inputs/watershed/allegheny_huc.geojson")
+BASE_WATERSHED_PATH = Path("/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson")
 
 # Duration folders to process. Use only folders that exist under CATALOG_DIR.
 # Examples:

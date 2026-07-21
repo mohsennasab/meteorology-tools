@@ -23,10 +23,10 @@ NOAA HDSC volume codes (lowercase): orb=Vol2 (Ohio River Basin), se=Vol9
 # ============================ USER CONFIG ============================
 RETURN_PERIODS = [1, 2, 5, 10, 25, 50, 100]   # years
 DURATION_DAYS  = 3                              # 3-day = 72-hr; Atlas 14 code "03da"
-VOLUMES        = ["orb", "ne"]                  # volumes to mosaic, in priority order
-WATERSHED_PATH = "/workspaces/meteorology-tools/inputs/watershed/allegheny_huc.geojson"
+VOLUMES        = ["orb", "se"]                  # volumes to mosaic, in priority order
+WATERSHED_PATH = "/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson"
 OUTPUT_DIR     = "/workspaces/meteorology-tools/outputs/na14"
-WATERSHED_LABEL = "Allegheny (HUC 0501)"
+WATERSHED_LABEL = "Upper Tennessee (HUC 0601)"
 # =====================================================================
 
 # matplotlib MUST be imported before rasterio in the slamcomp env (DLL conflict on libexpat)

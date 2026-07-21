@@ -19,6 +19,11 @@
 			"version": "latest"
 		}
 	},
+	"containerEnv": {
+		"PROJ_LIB": "/opt/conda/envs/mtools-base/share/proj",
+		"PROJ_DATA": "/opt/conda/envs/mtools-base/share/proj",
+		"GDAL_DATA": "/opt/conda/envs/mtools-base/share/gdal"
+	},
 	// "runArgs": [
 	// 	"--gpus",
 	// 	"all"

@@ -1,8 +1,23 @@
 # Notebook-generated figures/tables (recreated on every run)
 outputs/
 
-# Large external IBTrACS shapefile. The notebook downloads this from NOAA if missing.
-example_data/IBTrACS_Lines/
+# Local input data. Keep project-specific data files out of version control,
+# except for the small CONUS boundary shapefile used by the notebooks.
+inputs/**
+!inputs/
+!inputs/conus/
+!inputs/conus/.gitkeep
+!inputs/conus/cb_2018_us_nation_20m/
+!inputs/conus/cb_2018_us_nation_20m/**
+inputs/conus/cb_2018_us_nation_20m/*_EPSG5070.*
+!inputs/IBTrACS_Lines/
+!inputs/IBTrACS_Lines/.gitkeep
+!inputs/storm_catalog/
+!inputs/storm_catalog/.gitkeep
+!inputs/transposition_domains/
+!inputs/transposition_domains/.gitkeep
+!inputs/watershed/
+!inputs/watershed/.gitkeep
 
 # Jupyter / Python cruft
 .ipynb_checkpoints/

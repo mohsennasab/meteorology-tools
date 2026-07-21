@@ -17,6 +17,14 @@ Requirements:
 - VS Code
 - VS Code Dev Containers extension
 
+On Windows, Docker-based devcontainers usually require WSL2. If VS Code reports that WSL is not installed, open PowerShell as Administrator and run:
+
+```powershell
+wsl --install
+```
+
+Restart Windows after installation, start Docker Desktop, and then reopen the project in the devcontainer. If your organization blocks WSL installation or admin elevation, the devcontainer workflow may not be available on that machine; use the local Conda setup below instead.
+
 Clone the repository:
 
 ```bash
@@ -42,6 +50,39 @@ Inside the devcontainer, common paths are:
 /workspaces/meteorology-tools/inputs/prism/
 /workspaces/meteorology-tools/outputs/
 ```
+
+In VS Code, select the container Python interpreter and notebook kernel:
+
+```text
+Python: Select Interpreter
+/opt/conda/envs/mtools-base/bin/python
+```
+
+For notebooks, use the kernel picker and select the same `mtools-base` interpreter. You can verify the active environment from the VS Code terminal:
+
+```bash
+which python
+python -m pip --version
+python -c "import geopandas, shapely, pyproj; print(geopandas.__version__, shapely.__version__, pyproj.__version__)"
+ls $CONDA_PREFIX/share/proj/proj.db
+```
+
+Expected geospatial versions for this devcontainer are `geopandas >= 1.0.1`, `shapely >= 2.1.2`, and `pyproj >= 3.7`. If `shapely` reports an older pip-installed version, remove it and restore the conda-forge package:
+
+```bash
+python -m pip show shapely
+python -m pip uninstall -y shapely
+micromamba install -n mtools-base -c conda-forge --force-reinstall shapely=2.1.2
+```
+
+If your micromamba build does not accept `--force-reinstall`, use:
+
+```bash
+micromamba remove -n mtools-base shapely
+micromamba install -n mtools-base -c conda-forge shapely=2.1.2
+```
+
+Then restart the notebook kernel and rerun from the top. This avoids `GeoSeries.union_all()` errors caused by pip Shapely overriding conda-forge Shapely.
 
 Start Jupyter Lab from the VS Code terminal if needed:
 
@@ -103,10 +144,25 @@ Expected input categories include:
 - `inputs/transposition_domains/`: SLAM-SIG or other transposition domain shapefiles.
 - `inputs/storm_catalog/`: storm catalog outputs, ranked storm files, max precipitation locations, and valid-domain files.
 - `inputs/conus/`: CONUS boundary data used by some map workflows.
-- `inputs/IBTrACS/` or similar: local IBTrACS shapefile/netCDF files if not downloading them during notebook execution.
+- `inputs/IBTrACS_Lines/`: local IBTrACS shapefile/netCDF files if not downloading them during notebook execution.
 - `inputs/prism/`: PRISM precipitation, dewpoint, and DEM rasters used by the domain review notebook.
 
 Some PRISM files are included under `inputs/prism/`, but basin-specific watershed, transposition domain, and storm catalog files are not generally included.
+
+The current notebook/script defaults are configured for the Upper Tennessee example and expect these local files unless you edit the setup cells:
+
+```text
+inputs/watershed/Upper-Tennessee_huc04.geojson
+inputs/transposition_domains/TD.AORC.0601.SLAM-SIG.24hr.2024.v1.shp
+inputs/transposition_domains/TD.AORC.0601.SLAM-SIG.72hr.2024.v1.shp
+inputs/storm_catalog/SLAM-SIG-GSL0-Intersection-transpo_valid.json
+inputs/storm_catalog/max_precip_locations.geojson
+inputs/storm_catalog/ranked-storms.csv
+inputs/conus/cb_2018_us_nation_20m/cb_2018_us_nation_20m.shp
+inputs/prism/annual/prism_ppt_us_30s_2020_avg_30y.tif
+inputs/prism/annual/prism_tdmean_us_30s_2020_avg_30y.tif
+inputs/prism/dem/PRISM_us_dem_800m_bil.bil
+```
 
 ## Network And Data Access
 
@@ -115,9 +171,18 @@ Several workflows require internet or external data access:
 - NOAA Atlas 14 pipeline: requires access to NOAA HDSC Atlas 14 download endpoints.
 - AORC mass curve generation: requires access to AORC data on S3 and the project-specific `stormhub` dependencies.
 - IBTrACS screening: may download NOAA/NCEI IBTrACS shapefile and NetCDF data if local copies are not present.
-- Basemap plotting: map basemap cells use `contextily` and may need internet access for map tiles.
+- Basemap plotting: map basemap cells use `contextily` and may need internet access for OpenStreetMap tiles.
 
 If your organization blocks one of these services, download the required data separately and update the local paths in the notebooks/scripts.
+
+The notebooks use OpenStreetMap Mapnik with a fixed low zoom to reduce tile downloads while keeping major labels:
+
+```python
+OSM_BASEMAP_SOURCE = cx.providers.OpenStreetMap.Mapnik
+OSM_BASEMAP_ZOOM = 6
+```
+
+If tile downloads are slow or blocked by corporate networking, the geospatial calculations still work; only the basemap layer is affected. Use an approved company proxy or ask IT to allow the relevant tile-host domains rather than bypassing network controls.
 
 ## Requirements
 
