@@ -1,18 +1,14 @@
-﻿# Storm Transposition Domain Tools
+# Storm Transposition Domain Tools
 
-This repository contains notebooks and scripts used for storm transposition domain review, storm catalog checks, Atlas 14 basin statistics, and storm mass curve plots.
+This repository contains notebooks and scripts used for storm transposition domain review, storm catalog checks, NOAA Atlas 14 basin statistics, IBTrACS screening, and storm mass curve plots.
 
-The notebooks include a small example dataset so they can run on Binder or on a local machine. The scripts in `Scripts/` are standalone workflows. Some of them need local paths, a conda environment, and network access.
+This version is intended for local or devcontainer-based project work. It does not include all basin-specific input data needed to run the workflows end to end. Before running a notebook or script, update the file path variables near the top of that notebook or script so they point to the correct files on your local machine or inside your container.
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/mohsennasab/meteorology-tools/main?labpath=notebooks)
+Binder is not supported for this version because the workflows depend on local/project-specific data and external data services.
 
 ## Quick Start
 
-Run in your browser:
-
-Click the Binder badge above. The first launch can take a few minutes while Binder builds the environment. Later launches are usually faster.
-
-Run locally:
+Clone the repository and create the environment:
 
 ```bash
 git clone https://github.com/mohsennasab/meteorology-tools.git
@@ -22,17 +18,19 @@ conda activate meteorology-tools
 jupyter lab
 ```
 
-Then open a notebook in `notebooks/` and run the cells.
+Then open the notebooks in `notebooks/` and update the path variables in the setup cells before running them.
+
+If you use VS Code, this repository also includes a `.devcontainer/` configuration. In the devcontainer, the notebooks currently expect paths under `/workspaces/meteorology-tools/`. If you run outside the devcontainer, replace those paths with paths that exist on your local machine.
 
 ## Notebooks
 
 | Notebook | Purpose |
 |---|---|
-| `notebooks/three_stage_sop_domain_selection.ipynb` | Reviews candidate transposition domains using area ratio, PRISM precipitation, elevation, dewpoint, and map-based checks. |
-| `notebooks/storm_catalog_maps.ipynb` | Creates storm catalog maps and QC plots, including max precipitation locations, seasonal views, density maps, calendars, and distribution checks. |
-| `notebooks/ibtracs_td_screening.ipynb` | Screens IBTrACS tropical cyclone tracks against a transposition domain and maps the clipped tracks. |
+| `notebooks/mtools_01_domain_selection.ipynb` | Reviews candidate transposition domains using area ratio, PRISM precipitation, elevation, dewpoint, and map-based checks. |
+| `notebooks/mtools_02_storm_catalog_maps.ipynb` | Creates storm catalog maps and QC plots, including max precipitation locations, seasonal views, density maps, calendars, and distribution checks. |
+| `notebooks/mtools_03_ibtracs_screening.ipynb` | Screens IBTrACS tropical cyclone tracks against a transposition domain and cross-references storm catalog events with IBTrACS. |
 
-To use your own basin, domain, or catalog, edit the path variables in the setup cell near the top of each notebook.
+Each notebook has a setup cell near the top with input and output paths such as watershed files, transposition domain shapefiles, storm catalog files, PRISM rasters, and output folders. Edit those paths before running.
 
 ## Scripts
 
@@ -43,67 +41,82 @@ The `Scripts/` folder contains standalone workflows with their own README files.
 | `Scripts/Atlas14_Pipeline/` | Downloads NOAA Atlas 14 rasters, mosaics selected volumes, clips to a watershed, computes basin statistics, and writes a frequency curve. |
 | `Scripts/StormCatalog_MassCurve/` | Reads a storm catalog, fetches AORC precipitation, and regenerates mass curve PNGs for storm items. |
 
-See each folder's `README.md` before running the scripts. The mass curve script should be run in the `stormhub` conda environment because it needs project-specific libraries such as `stormhub` and `hecdss`.
+The scripts also contain user-editable path/configuration blocks near the top. Update those settings before running.
 
-## Repository Layout
+## Input Data
 
-```text
-meteorology-tools/
-  notebooks/
-  example_data/
-  documents/
-  outputs/
-  Scripts/
-    Atlas14_Pipeline/
-      atlas14_pipeline.py
-      README.md
-    StormCatalog_MassCurve/
-      mass_curve.py
-      README.md
-      Inputs/
-  environment.yml
-  README.md
-```
+The repository keeps an `inputs/` folder structure as a template, but most project-specific data files must be supplied by the user.
 
-## Example Data
+Expected input categories include:
 
-The notebooks use the example data under `example_data/`.
+- `inputs/watershed/`: watershed polygon files, such as GeoJSON.
+- `inputs/transposition_domains/`: SLAM-SIG or other transposition domain shapefiles.
+- `inputs/storm_catalog/`: storm catalog outputs, ranked storm files, max precipitation locations, and valid-domain files.
+- `inputs/conus/`: CONUS boundary data used by some map workflows.
+- `inputs/IBTrACS/` or similar: local IBTrACS shapefile/netCDF files if not downloading them during notebook execution.
+- `inputs/prism/`: PRISM precipitation, dewpoint, and DEM rasters used by the domain review notebook.
 
-Main folders:
+Some PRISM files are included under `inputs/prism/`, but basin-specific watershed, transposition domain, and storm catalog files are not generally included.
 
-- `watershed/`: basin polygons
-- `transposition_domains/`: transposition domain shapefiles and valid-domain polygons
-- `storm_catalog/`: storm catalog max precipitation locations
-- `IBTrACS_Lines/`: IBTrACS line tracks when available locally
-- `prism/`: PRISM precipitation, dewpoint, and DEM rasters used by the domain review notebook
+## Network And Data Access
 
-Some PRISM files are downsampled so the notebooks run more easily on Binder. For local production work, replace them with the native-resolution PRISM rasters while keeping the same filenames.
+Several workflows require internet or external data access:
+
+- NOAA Atlas 14 pipeline: requires access to NOAA HDSC Atlas 14 download endpoints.
+- AORC mass curve generation: requires access to AORC data on S3 and the project-specific `stormhub` dependencies.
+- IBTrACS screening: may download NOAA/NCEI IBTrACS shapefile and NetCDF data if local copies are not present.
+- Basemap plotting: map basemap cells use `contextily` and may need internet access for map tiles.
+
+If your organization blocks one of these services, download the required data separately and update the local paths in the notebooks/scripts.
 
 ## Requirements
 
-For notebooks, use:
+For notebooks and most geospatial workflows:
 
 ```bash
 conda env create -f environment.yml
 conda activate meteorology-tools
 ```
 
-Key notebook libraries include `geopandas`, `rasterio`, `shapely`, `pyproj`, `scipy`, `matplotlib`, `contextily`, `mapclassify`, and `jupyterlab`.
+Key libraries include `geopandas`, `rasterio`, `shapely`, `pyproj`, `scipy`, `matplotlib`, `contextily`, `mapclassify`, `xarray`, `rioxarray`, and `jupyterlab`.
 
-Some script workflows need additional project environments. For example, `Scripts/StormCatalog_MassCurve/mass_curve.py` should be run with:
+Some script workflows need additional project environments. For example, `Scripts/StormCatalog_MassCurve/mass_curve.py` should be run in an environment that includes `stormhub` and `hecdss`:
 
 ```bash
 conda activate stormhub
 python Scripts/StormCatalog_MassCurve/mass_curve.py
 ```
 
-## Notes
+## Repository Layout
 
-- Map basemaps use `contextily`, so those cells need internet access.
-- Atlas 14 downloads require internet access to NOAA.
-- Mass curve generation requires internet access to AORC data on S3.
-- Outputs created by notebooks are written to `outputs/`.
-- Script outputs are written in the folders configured inside each script.
+```text
+meteorology-tools/
+  .devcontainer/
+  documents/
+  inputs/
+    conus/
+    IBTrACS_Lines/
+    prism/
+    storm_catalog/
+    transposition_domains/
+    watershed/
+  notebooks/
+    mtools_01_domain_selection.ipynb
+    mtools_02_storm_catalog_maps.ipynb
+    mtools_03_ibtracs_screening.ipynb
+  outputs/
+    01_domain_selection/
+    02_storm_catalog_maps/
+    03_ibtracs_screening/
+    na14/
+  Scripts/
+    Atlas14_Pipeline/
+    StormCatalog_MassCurve/
+  environment.yml
+  README.md
+```
+
+Outputs created by notebooks and scripts are written to the configured output folders. The default output folders are under `outputs/`, but you can change them in each workflow's setup/configuration block.
 
 ## Attribution
 

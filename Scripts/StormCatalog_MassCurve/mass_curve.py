@@ -28,6 +28,8 @@ import rioxarray  # noqa: F401 — registers .rio accessor
 import xarray as xr
 from shapely.affinity import translate
 
+from stormhub.met.zarr_to_dss import get_aorc_paths, get_s3_zarr_data
+
 # AORC precipitation variable name and unit conversion.
 AORC_PRECIP_VARIABLE = "APCP_surface"
 MM_TO_INCH_CONVERSION_FACTOR = 0.0393701
@@ -55,11 +57,11 @@ DEFAULT_DURATIONS = ["3hr-events", "6hr-events", "12hr-events", "24hr-events", "
 # For the included local example, this points to:
 #   meteorology-tools/Scripts/StormCatalog_MassCurve/Inputs
 SCRIPT_DIR = Path(__file__).resolve().parent
-CATALOG_DIR = SCRIPT_DIR / "Inputs"
+CATALOG_DIR = Path("/workspaces/meteorology-tools/inputs/storm_catalog")
 
 # Base watershed GeoJSON used to transpose the watershed to each storm location.
 # This must be the same base watershed used when the storm catalog was created.
-BASE_WATERSHED_PATH = CATALOG_DIR / "Upper-Tennessee_huc04.geojson"
+BASE_WATERSHED_PATH = Path("/workspaces/meteorology-tools/inputs/watershed/allegheny_huc.geojson")
 
 # Duration folders to process. Use only folders that exist under CATALOG_DIR.
 # Examples:
@@ -85,7 +87,6 @@ BATCH_SIZE = 32
 matplotlib.use("Agg")
 plt.rcParams.update(
     {
-        "font.family": "Arial",
         "font.size": 18,
         "axes.titlesize": 18,
         "axes.labelsize": 18,
@@ -125,8 +126,7 @@ def fetch_precip_timeseries(
     Adjusts start_dt by +1hr because AORC timestamps are period-ending.
     Returns a lazy DataArray in mm (not yet materialized).
     """
-    from stormhub.met.zarr_to_dss import get_aorc_paths, get_s3_zarr_data
-
+    
     fetch_start = start_dt.replace(tzinfo=None) + timedelta(hours=1)
     fetch_end = end_dt.replace(tzinfo=None)
     s3_paths = get_aorc_paths(fetch_start, fetch_end)
