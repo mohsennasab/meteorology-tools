@@ -6,21 +6,62 @@ This version is intended for local or devcontainer-based project work. It does n
 
 Binder is not supported for this version because the workflows depend on local/project-specific data and external data services.
 
-## Quick Start
+## Quick Start With Devcontainer
 
-Clone the repository and create the environment:
+This repository includes a VS Code devcontainer that builds a reproducible Linux-based Python environment with micromamba. This is the recommended way to run the notebooks because the current notebooks use paths under `/workspaces/meteorology-tools/`.
+
+Requirements:
+
+- Git
+- Docker Desktop or another Docker-compatible container runtime
+- VS Code
+- VS Code Dev Containers extension
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/mohsennasab/meteorology-tools.git
 cd meteorology-tools
+```
+
+Open the repository folder in VS Code. When prompted, choose **Reopen in Container**. You can also use the command palette:
+
+```text
+Dev Containers: Reopen in Container
+```
+
+The container creates and activates the `mtools-base` environment from `environment.yml`. After the container finishes building, add or mount the project-specific input files expected by your workflow, then update the path variables near the top of each notebook or script.
+
+Inside the devcontainer, common paths are:
+
+```text
+/workspaces/meteorology-tools/inputs/watershed/
+/workspaces/meteorology-tools/inputs/transposition_domains/
+/workspaces/meteorology-tools/inputs/storm_catalog/
+/workspaces/meteorology-tools/inputs/conus/
+/workspaces/meteorology-tools/inputs/prism/
+/workspaces/meteorology-tools/outputs/
+```
+
+Start Jupyter Lab from the VS Code terminal if needed:
+
+```bash
+jupyter lab --ip 0.0.0.0 --no-browser
+```
+
+Then open and run the notebooks in `notebooks/`.
+
+## Local Conda Setup
+
+If you are not using the devcontainer, create the Conda environment locally:
+
+```bash
 conda env create -f environment.yml
 conda activate meteorology-tools
 jupyter lab
 ```
 
-Then open the notebooks in `notebooks/` and update the path variables in the setup cells before running them.
-
-If you use VS Code, this repository also includes a `.devcontainer/` configuration. In the devcontainer, the notebooks currently expect paths under `/workspaces/meteorology-tools/`. If you run outside the devcontainer, replace those paths with paths that exist on your local machine.
+When running locally, replace any `/workspaces/meteorology-tools/...` paths in the notebooks or scripts with paths that exist on your machine.
 
 ## Notebooks
 
@@ -42,6 +83,15 @@ The `Scripts/` folder contains standalone workflows with their own README files.
 | `Scripts/StormCatalog_MassCurve/` | Reads a storm catalog, fetches AORC precipitation, and regenerates mass curve PNGs for storm items. |
 
 The scripts also contain user-editable path/configuration blocks near the top. Update those settings before running.
+
+Run scripts from the repository root so relative paths and output folders are easier to manage:
+
+```bash
+python Scripts/Atlas14_Pipeline/atlas14_pipeline.py
+python Scripts/StormCatalog_MassCurve/mass_curve.py
+```
+
+The mass curve script requires project-specific packages such as `stormhub` and `hecdss`. If those packages are not available in `meteorology-tools` or `mtools-base`, run that script from an environment where they are installed.
 
 ## Input Data
 
@@ -71,7 +121,7 @@ If your organization blocks one of these services, download the required data se
 
 ## Requirements
 
-For notebooks and most geospatial workflows:
+For local notebooks and most geospatial workflows:
 
 ```bash
 conda env create -f environment.yml
@@ -80,7 +130,7 @@ conda activate meteorology-tools
 
 Key libraries include `geopandas`, `rasterio`, `shapely`, `pyproj`, `scipy`, `matplotlib`, `contextily`, `mapclassify`, `xarray`, `rioxarray`, and `jupyterlab`.
 
-Some script workflows need additional project environments. For example, `Scripts/StormCatalog_MassCurve/mass_curve.py` should be run in an environment that includes `stormhub` and `hecdss`:
+Some script workflows need additional project environments. For example, `Scripts/StormCatalog_MassCurve/mass_curve.py` should be run in an environment that includes `stormhub` and `hecdss` if those packages are not available in the devcontainer/local environment:
 
 ```bash
 conda activate stormhub
