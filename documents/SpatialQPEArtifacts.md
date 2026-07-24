@@ -42,5 +42,5 @@ The following is a summary of common QPE spatial artifacts that have been identi
 
 ## South Platte Examples
 Here are examples of some of the above QPE spatial artifacts found when reviewing the South Platte storm catalog
-<img width="1264" height="642" alt="SP_QPEartificat_examples" src="https://github.com/user-attachments/assets/77bac774-b534-4036-b87d-bfc19f292e54" />
+<img width="1280" height="720" alt="SP_example_QPEartifacts" src="https://github.com/user-attachments/assets/157f4611-3081-46f0-bb46-6c92c2314ae2" />
 
