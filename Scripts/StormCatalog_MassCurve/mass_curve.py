@@ -4,6 +4,12 @@
 This script adds mass curve visualizations to existing storm items in a STAC catalog.
 Assumes the catalog structure is already in place with item JSONs and AORC metadata.
 
+NOTE: this script requires the installation of the stormhub package.
+The devcontainer does not include stormhub by default, so you will need to install it manually.
+More details on why are documented here: https://github.com/mohsennasab/meteorology-tools/issues/2
+
+pip install stormhub
+
 Edit the USER INPUTS block below, then run this file.
 """
 
