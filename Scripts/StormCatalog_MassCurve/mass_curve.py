@@ -41,7 +41,14 @@ AORC_PRECIP_VARIABLE = "APCP_surface"
 MM_TO_INCH_CONVERSION_FACTOR = 0.0393701
 
 # Standard duration folders used by StormCatalog outputs.
-DEFAULT_DURATIONS = ["3hr-events", "6hr-events", "12hr-events", "24hr-events", "48hr-events", "72hr-events"]
+DEFAULT_DURATIONS = [
+    "3hr-events",
+    "6hr-events",
+    "12hr-events",
+    "24hr-events",
+    "48hr-events",
+    "72hr-events",
+]
 
 
 # =============================================================================
@@ -67,7 +74,9 @@ CATALOG_DIR = Path("/workspaces/meteorology-tools/inputs/storm_catalog")
 
 # Base watershed GeoJSON used to transpose the watershed to each storm location.
 # This must be the same base watershed used when the storm catalog was created.
-BASE_WATERSHED_PATH = Path("/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson")
+BASE_WATERSHED_PATH = Path(
+    "/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson"
+)
 
 # Duration folders to process. Use only folders that exist under CATALOG_DIR.
 # Examples:
@@ -101,7 +110,9 @@ plt.rcParams.update(
     }
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -118,7 +129,9 @@ def apply_aorc_transform(
 ) -> gpd.GeoDataFrame:
     """Return a copy of base_watershed_gdf with all geometries shifted by (c, f) degrees."""
     shifted = base_watershed_gdf.copy()
-    shifted["geometry"] = shifted.geometry.apply(lambda g: translate(g, xoff=transform_c, yoff=transform_f))
+    shifted["geometry"] = shifted.geometry.apply(
+        lambda g: translate(g, xoff=transform_c, yoff=transform_f)
+    )
     return shifted
 
 
@@ -132,11 +145,13 @@ def fetch_precip_timeseries(
     Adjusts start_dt by +1hr because AORC timestamps are period-ending.
     Returns a lazy DataArray in mm (not yet materialized).
     """
-    
+
     fetch_start = start_dt.replace(tzinfo=None) + timedelta(hours=1)
     fetch_end = end_dt.replace(tzinfo=None)
     s3_paths = get_aorc_paths(fetch_start, fetch_end)
-    ds = get_s3_zarr_data(s3_paths, aoi_gdf, fetch_start, fetch_end, [AORC_PRECIP_VARIABLE])
+    ds = get_s3_zarr_data(
+        s3_paths, aoi_gdf, fetch_start, fetch_end, [AORC_PRECIP_VARIABLE]
+    )
     return ds[AORC_PRECIP_VARIABLE]
 
 
@@ -223,14 +238,14 @@ def plot_mass_curves(
     ax2.set_ylim(bottom=0)
 
     # Cumulative lines on top axis.
-    l1, = ax1.plot(
+    (l1,) = ax1.plot(
         point_cumulative.index,
         point_cumulative.values,
         color="steelblue",
         linewidth=3,
         label="Cumulative peak AORC grid cell precip",
     )
-    l2, = ax1.plot(
+    (l2,) = ax1.plot(
         areal_cumulative.index,
         areal_cumulative.values,
         color="darkorange",
@@ -396,7 +411,9 @@ def generate_mass_curve_for_item(
     return output_path
 
 
-def discover_pending_items(catalog_dir: str, durations: list[str], force: bool = False) -> list[dict]:
+def discover_pending_items(
+    catalog_dir: str, durations: list[str], force: bool = False
+) -> list[dict]:
     """Scan duration folders and return items to process.
 
     Without force, skips items that already have the mass_curve asset.
@@ -424,7 +441,13 @@ def discover_pending_items(catalog_dir: str, durations: list[str], force: bool =
                 continue
             has_asset = "mass_curve" in item_dict.get("assets", {})
             if force or not has_asset:
-                pending.append({"item_path": item_path, "item_id": entry.name, "duration": duration})
+                pending.append(
+                    {
+                        "item_path": item_path,
+                        "item_id": entry.name,
+                        "duration": duration,
+                    }
+                )
     return pending
 
 
@@ -432,7 +455,9 @@ def _worker(args: dict) -> dict:
     """Worker function to process a single item."""
     item_path = args["item_path"]
     try:
-        result = generate_mass_curve_for_item(item_path, args["base_watershed_path"], force=args["force"])
+        result = generate_mass_curve_for_item(
+            item_path, args["base_watershed_path"], force=args["force"]
+        )
         outcome = "skipped" if result is None else "success"
         return {"item_path": item_path, "outcome": outcome, "error": None}
     except Exception as e:
@@ -459,7 +484,9 @@ def run(
         force: Regenerate plots even if mass_curve asset already exists.
         durations: Duration folders to process (default: all standard durations).
     """
-    pending = discover_pending_items(catalog_dir, durations or DEFAULT_DURATIONS, force=force)
+    pending = discover_pending_items(
+        catalog_dir, durations or DEFAULT_DURATIONS, force=force
+    )
     if limit:
         pending = pending[:limit]
     total = len(pending)
@@ -501,12 +528,20 @@ def run(
 def validate_user_inputs() -> None:
     """Fail early with clear messages when the editable input block is not ready."""
     if not Path(CATALOG_DIR).is_dir():
-        raise FileNotFoundError(f"CATALOG_DIR does not exist or is not a folder: {CATALOG_DIR}")
+        raise FileNotFoundError(
+            f"CATALOG_DIR does not exist or is not a folder: {CATALOG_DIR}"
+        )
     if not Path(BASE_WATERSHED_PATH).is_file():
-        raise FileNotFoundError(f"BASE_WATERSHED_PATH does not exist or is not a file: {BASE_WATERSHED_PATH}")
+        raise FileNotFoundError(
+            f"BASE_WATERSHED_PATH does not exist or is not a file: {BASE_WATERSHED_PATH}"
+        )
     if not DURATIONS_TO_PROCESS:
         raise ValueError("DURATIONS_TO_PROCESS must list at least one duration folder.")
-    missing = [duration for duration in DURATIONS_TO_PROCESS if not (Path(CATALOG_DIR) / duration).is_dir()]
+    missing = [
+        duration
+        for duration in DURATIONS_TO_PROCESS
+        if not (Path(CATALOG_DIR) / duration).is_dir()
+    ]
     if missing:
         raise FileNotFoundError(
             "These duration folders were not found under CATALOG_DIR: "

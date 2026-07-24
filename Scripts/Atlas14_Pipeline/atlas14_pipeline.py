@@ -21,11 +21,13 @@ NOAA HDSC volume codes (lowercase): orb=Vol2 (Ohio River Basin), se=Vol9
 """
 
 # ============================ USER CONFIG ============================
-RETURN_PERIODS = [1, 2, 5, 10, 25, 50, 100]   # years
-DURATION_DAYS  = 3                              # 3-day = 72-hr; Atlas 14 code "03da"
-VOLUMES        = ["orb", "se"]                  # volumes to mosaic, in priority order
-WATERSHED_PATH = "/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson"
-OUTPUT_DIR     = "/workspaces/meteorology-tools/outputs/na14"
+RETURN_PERIODS = [1, 2, 5, 10, 25, 50, 100]  # years
+DURATION_DAYS = 3  # 3-day = 72-hr; Atlas 14 code "03da"
+VOLUMES = ["orb", "se"]  # volumes to mosaic, in priority order
+WATERSHED_PATH = (
+    "/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson"
+)
+OUTPUT_DIR = "/workspaces/meteorology-tools/outputs/na14"
 WATERSHED_LABEL = "Upper Tennessee (HUC 0601)"
 # =====================================================================
 
@@ -49,12 +51,12 @@ from rasterio.merge import merge
 
 
 WATERSHED_PATH = Path(WATERSHED_PATH)
-OUTPUT_DIR     = Path(OUTPUT_DIR)
+OUTPUT_DIR = Path(OUTPUT_DIR)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-NOAA_BASE_URL  = "https://hdsc.nws.noaa.gov/pub/hdsc/data"
-DUR_CODE       = f"{DURATION_DAYS:02d}da"
-SUFFIXES       = {"": "best estimate", "u": "upper 90% CI", "l": "lower 90% CI"}
+NOAA_BASE_URL = "https://hdsc.nws.noaa.gov/pub/hdsc/data"
+DUR_CODE = f"{DURATION_DAYS:02d}da"
+SUFFIXES = {"": "best estimate", "u": "upper 90% CI", "l": "lower 90% CI"}
 
 
 def asset_filename(vol: str, T: int, suffix: str) -> str:
@@ -64,15 +66,15 @@ def asset_filename(vol: str, T: int, suffix: str) -> str:
 def download_one(vol: str, T: int, suffix: str):
     """Download a single Atlas 14 zip; cache by file presence. Returns Path or None."""
     fname = asset_filename(vol, T, suffix)
-    url   = f"{NOAA_BASE_URL}/{vol}/{fname}"
-    out   = OUTPUT_DIR / fname
+    url = f"{NOAA_BASE_URL}/{vol}/{fname}"
+    out = OUTPUT_DIR / fname
     if out.exists() and out.stat().st_size > 0:
         return out
     try:
         with urllib.request.urlopen(url, timeout=120) as resp:
             data = resp.read()
         out.write_bytes(data)
-        print(f"      downloaded {fname} ({len(data)/1024:.0f} KB)")
+        print(f"      downloaded {fname} ({len(data) / 1024:.0f} KB)")
         return out
     except Exception as e:
         print(f"      FAILED {fname} ({type(e).__name__}: {e})")
@@ -102,7 +104,7 @@ def normalize_crs(asc_file: Path, target_crs="EPSG:4269") -> Path:
         return out
     with rasterio.open(asc_file) as src:
         profile = src.profile.copy()
-        data    = src.read(1)
+        data = src.read(1)
     profile.update(driver="GTiff", crs=target_crs, compress="lzw")
     with rasterio.open(out, "w", **profile) as dst:
         dst.write(data, 1)
@@ -120,19 +122,19 @@ def mosaic_and_save(asc_files, out_tif: Path):
             sources, method="first", nodata=sources[0].nodata
         )
         profile = sources[0].profile.copy()
-        crs     = sources[0].crs
-        nodata  = sources[0].nodata
+        crs = sources[0].crs
+        nodata = sources[0].nodata
     finally:
         for s in sources:
             s.close()
     profile.update(
-        driver    = "GTiff",
-        transform = mosaic_transform,
-        width     = mosaic.shape[2],
-        height    = mosaic.shape[1],
-        crs       = crs,
-        nodata    = nodata,
-        compress  = "lzw",
+        driver="GTiff",
+        transform=mosaic_transform,
+        width=mosaic.shape[2],
+        height=mosaic.shape[1],
+        crs=crs,
+        nodata=nodata,
+        compress="lzw",
     )
     with rasterio.open(out_tif, "w", **profile) as dst:
         dst.write(mosaic[0], 1)
@@ -149,15 +151,15 @@ def basin_stats(mosaic_tif: Path):
     arr = clipped[0].astype(np.float64)
     if nodata is not None:
         arr = np.where(arr == nodata, np.nan, arr)
-    arr = arr / 1000.0   # NOAA stores values as inches × 1000
+    arr = arr / 1000.0  # NOAA stores values as inches × 1000
     valid = arr[np.isfinite(arr)]
     if valid.size == 0:
         return None
     return {
         "basin_mean_in": float(valid.mean()),
-        "basin_min_in":  float(valid.min()),
-        "basin_max_in":  float(valid.max()),
-        "n_pixels":      int(valid.size),
+        "basin_min_in": float(valid.min()),
+        "basin_max_in": float(valid.max()),
+        "n_pixels": int(valid.size),
     }
 
 
@@ -182,7 +184,7 @@ def process_one(T: int, suffix: str):
 
 print(f"NOAA Atlas 14 PDS pipeline — {WATERSHED_LABEL}")
 print(f"  Volumes: {', '.join(VOLUMES)}")
-print(f"  Duration: {DUR_CODE} ({DURATION_DAYS}-day = {DURATION_DAYS*24}-hr)")
+print(f"  Duration: {DUR_CODE} ({DURATION_DAYS}-day = {DURATION_DAYS * 24}-hr)")
 print(f"  Return periods: {RETURN_PERIODS}\n")
 
 rows = []
@@ -196,14 +198,17 @@ for T in RETURN_PERIODS:
             print("    (no data)")
             continue
         if suffix == "":
-            row.update({k: round(v, 3) if isinstance(v, float) else v
-                        for k, v in s.items()})
+            row.update(
+                {k: round(v, 3) if isinstance(v, float) else v for k, v in s.items()}
+            )
         else:
             tag = "upper" if suffix == "u" else "lower"
             row[f"basin_mean_{tag}90_in"] = round(s["basin_mean_in"], 3)
-        print(f"    basin-mean {s['basin_mean_in']:.2f} in "
-              f"(min {s['basin_min_in']:.2f}, max {s['basin_max_in']:.2f}, "
-              f"n={s['n_pixels']:,} pixels)")
+        print(
+            f"    basin-mean {s['basin_mean_in']:.2f} in "
+            f"(min {s['basin_min_in']:.2f}, max {s['basin_max_in']:.2f}, "
+            f"n={s['n_pixels']:,} pixels)"
+        )
     rows.append(row)
 
 # ----- CSV -----
@@ -222,14 +227,29 @@ if {"basin_mean_lower90_in", "basin_mean_upper90_in"}.issubset(df.columns):
         df["return_period_yr"],
         df["basin_mean_lower90_in"],
         df["basin_mean_upper90_in"],
-        color="navy", alpha=0.15, label="NOAA 90% confidence interval",
+        color="navy",
+        alpha=0.15,
+        label="NOAA 90% confidence interval",
     )
 
-ax.plot(df["return_period_yr"], df["basin_mean_in"],
-        color="navy", linewidth=2.0, alpha=0.7, zorder=2)
-ax.scatter(df["return_period_yr"], df["basin_mean_in"],
-           color="navy", s=80, edgecolor="black", linewidth=0.5,
-           zorder=3, label="Basin-mean (Atlas 14 PDS)")
+ax.plot(
+    df["return_period_yr"],
+    df["basin_mean_in"],
+    color="navy",
+    linewidth=2.0,
+    alpha=0.7,
+    zorder=2,
+)
+ax.scatter(
+    df["return_period_yr"],
+    df["basin_mean_in"],
+    color="navy",
+    s=80,
+    edgecolor="black",
+    linewidth=0.5,
+    zorder=3,
+    label="Basin-mean (Atlas 14 PDS)",
+)
 
 ax.set_xscale("log")
 xticks = list(RETURN_PERIODS)
@@ -238,15 +258,17 @@ ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{int(v)}"))
 ax.xaxis.set_minor_locator(mticker.NullLocator())
 ax.set_xlim(min(xticks) * 0.9, max(xticks) * 1.1)
 ax.set_xlabel("Return period (yr)")
-ax.set_ylabel(f"{DURATION_DAYS*24}-hr basin-mean precipitation (in)")
+ax.set_ylabel(f"{DURATION_DAYS * 24}-hr basin-mean precipitation (in)")
 
-ax2 = ax.secondary_yaxis("right",
-                         functions=(lambda y: y * 25.4, lambda y: y / 25.4))
+ax2 = ax.secondary_yaxis("right", functions=(lambda y: y * 25.4, lambda y: y / 25.4))
 ax2.set_ylabel("(mm)")
 
 ax.grid(True, which="major", alpha=0.3)
-ax.set_title(f"NOAA Atlas 14 PDS — {DURATION_DAYS*24}-hr basin-mean precipitation, "
-             f"{WATERSHED_LABEL}", fontsize=14)
+ax.set_title(
+    f"NOAA Atlas 14 PDS — {DURATION_DAYS * 24}-hr basin-mean precipitation, "
+    f"{WATERSHED_LABEL}",
+    fontsize=14,
+)
 ax.legend(loc="lower right", fontsize=11)
 
 png_out = OUTPUT_DIR / "Atlas14_72hr_PDS_frequency_curve.png"
