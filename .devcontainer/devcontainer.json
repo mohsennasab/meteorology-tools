@@ -12,9 +12,9 @@
 			"autoActivate": true,
 			"version": "1.5.6"
 		},
-		"ghcr.io/devcontainers/features/node:1": {
-			"version": "lts"
-		},
+		// "ghcr.io/devcontainers/features/node:1": {
+		// 	"version": "lts"
+		// },
 		"ghcr.io/devcontainers/features/aws-cli:1": {
 			"version": "latest"
 		}
