@@ -1,6 +1,9 @@
 # Notebook-generated figures/tables (recreated on every run)
 outputs/
 
+# Local example data
+example_data/
+
 # Local input data. Keep project-specific data files out of version control,
 # except for the small CONUS boundary shapefile used by the notebooks.
 inputs/**

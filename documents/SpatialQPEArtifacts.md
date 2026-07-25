@@ -44,3 +44,9 @@ The following is a summary of common QPE spatial artifacts that have been identi
 Here are examples of some of the above QPE spatial artifacts found when reviewing the South Platte storm catalog
 <img width="1280" height="720" alt="SP_example_QPEartifacts" src="https://github.com/user-attachments/assets/157f4611-3081-46f0-bb46-6c92c2314ae2" />
 
+## Upper Tennessee Examples
+Here are examples of QPE spatial artifacts found when reviewing the Upper Tennessee storm catalog.
+
+![Upper Tennessee QPE spatial artifact example 1](images/UT1.png)
+
+![Upper Tennessee QPE spatial artifact example 2](images/UT2.png)
