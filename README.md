@@ -1,8 +1,11 @@
 # Storm Transposition Domain Tools
 
-This repository contains notebooks and scripts used for storm transposition domain review, storm catalog checks, NOAA Atlas 14 basin statistics, IBTrACS screening, and storm mass curve plots.
+This repository contains notebooks and scripts used for storm transposition domain review, storm catalog checks, NOAA Atlas 14 watershed statistics and HEC-HMS bias-grid preparation, IBTrACS screening, and storm mass curve plots.
 
-This version is intended for local or devcontainer-based project work. It does not include all basin-specific input data needed to run the workflows end to end. Before running a notebook or script, update the file path variables near the top of that notebook or script so they point to the correct files on your local machine or inside your container.
+Use this repository on a local workstation or in the devcontainer. The
+repository does not include all basin-specific input data. Before running a
+notebook or script, set its input paths to files on your workstation or in the
+container.
 
 Binder is not supported for this version because the workflows depend on local/project-specific data and external data services.
 
@@ -17,7 +20,9 @@ Requirements:
 - VS Code
 - VS Code Dev Containers extension
 
-On Windows, Docker-based devcontainers usually require WSL2. If VS Code reports that WSL is not installed, open PowerShell as Administrator and run:
+On Windows, Docker-based devcontainers require WSL2 in most configurations. If
+VS Code reports that WSL is not installed, open PowerShell as Administrator and
+run:
 
 ```powershell
 wsl --install
@@ -94,7 +99,7 @@ Then open and run the notebooks in `notebooks/`.
 
 ## Local Conda Setup
 
-If you are not using the devcontainer, create the Conda environment locally:
+For a run outside the devcontainer, create the Conda environment:
 
 ```bash
 conda env create -f environment.yml
@@ -102,15 +107,17 @@ conda activate meteorology-tools
 jupyter lab
 ```
 
-When running locally, replace any `/workspaces/meteorology-tools/...` paths in the notebooks or scripts with paths that exist on your machine.
+For a local Conda run, replace each `/workspaces/meteorology-tools/...` path
+with a path on your workstation.
 
 ## Notebooks
 
 | Notebook | Purpose |
 |---|---|
 | `notebooks/mtools_01_domain_selection.ipynb` | Reviews candidate transposition domains using area ratio, PRISM precipitation, elevation, dewpoint, and map-based checks. |
-| `notebooks/mtools_02_storm_catalog_maps.ipynb` | Creates storm catalog maps and QC plots, including max precipitation locations, seasonal views, density maps, calendars, and distribution checks. |
-| `notebooks/mtools_03_ibtracs_screening.ipynb` | Screens IBTrACS tropical cyclone tracks against a transposition domain and cross-references storm catalog events with IBTrACS. |
+| `notebooks/mtools_02_storm_catalog_consistency.ipynb` | Compares `ranked-storms.csv` with the JSON metadata in each numbered StormHub event folder and writes an Excel review report. |
+| `notebooks/mtools_03_storm_catalog_maps.ipynb` | Creates storm catalog maps and QC plots, including max precipitation locations, seasonal views, density maps, calendars, and distribution checks. |
+| `notebooks/mtools_04_ibtracs_screening.ipynb` | Screens IBTrACS tropical cyclone tracks against a transposition domain and cross-references storm catalog events with IBTrACS. |
 
 Each notebook has a setup cell near the top with input and output paths such as watershed files, transposition domain shapefiles, storm catalog files, PRISM rasters, and output folders. Edit those paths before running.
 
@@ -120,7 +127,7 @@ The `Scripts/` folder contains standalone workflows with their own README files.
 
 | Folder | Contents |
 |---|---|
-| `Scripts/Atlas14_Pipeline/` | Downloads NOAA Atlas 14 rasters, mosaics selected volumes, clips to a watershed, computes basin statistics, and writes a frequency curve. |
+| `Scripts/Atlas14_Pipeline/` | Contains separate tools for watershed Atlas 14 precipitation-frequency statistics and for creating the SOP-specified HEC-HMS Atlas 14 bias grid over a transposition domain. |
 | `Scripts/StormCatalog_MassCurve/` | Reads a storm catalog, fetches AORC precipitation, and regenerates mass curve PNGs for storm items. |
 
 The scripts also contain user-editable path/configuration blocks near the top. Update those settings before running.
@@ -128,7 +135,8 @@ The scripts also contain user-editable path/configuration blocks near the top. U
 Run scripts from the repository root so relative paths and output folders are easier to manage:
 
 ```bash
-python Scripts/Atlas14_Pipeline/atlas14_pipeline.py
+python Scripts/Atlas14_Pipeline/atlas14_watershed_frequency_summary.py
+python Scripts/Atlas14_Pipeline/atlas14_hms_bias_grid.py
 python Scripts/StormCatalog_MassCurve/mass_curve.py
 ```
 
@@ -147,7 +155,8 @@ Expected input categories include:
 - `inputs/IBTrACS_Lines/`: local IBTrACS shapefile/netCDF files if not downloading them during notebook execution.
 - `inputs/prism/`: PRISM precipitation, dewpoint, and DEM rasters used by the domain review notebook.
 
-Some PRISM files are included under `inputs/prism/`, but basin-specific watershed, transposition domain, and storm catalog files are not generally included.
+Some PRISM files are included under `inputs/prism/`. Basin-specific watershed,
+transposition-domain, and storm-catalog files are not included.
 
 The current notebook/script defaults are configured for the Upper Tennessee example and expect these local files unless you edit the setup cells:
 
@@ -173,7 +182,8 @@ Several workflows require internet or external data access:
 - IBTrACS screening: may download NOAA/NCEI IBTrACS shapefile and NetCDF data if local copies are not present.
 - Basemap plotting: map basemap cells use `contextily` and may need internet access for OpenStreetMap tiles.
 
-If your organization blocks one of these services, download the required data separately and update the local paths in the notebooks/scripts.
+If your organization blocks one of these services, download the required data
+and update the local paths in the notebooks or scripts.
 
 The notebooks use OpenStreetMap Mapnik with a fixed low zoom to reduce tile downloads while keeping major labels:
 
@@ -182,7 +192,9 @@ OSM_BASEMAP_SOURCE = cx.providers.OpenStreetMap.Mapnik
 OSM_BASEMAP_ZOOM = 6
 ```
 
-If tile downloads are slow or blocked by corporate networking, the geospatial calculations still work; only the basemap layer is affected. Use an approved company proxy or ask IT to allow the relevant tile-host domains rather than bypassing network controls.
+If tile downloads are slow or blocked by corporate networking, the geospatial
+calculations still work without the basemap. Use an approved company proxy or
+ask IT to allow the tile-host domains rather than bypassing network controls.
 
 ## Requirements
 
@@ -217,12 +229,14 @@ meteorology-tools/
     watershed/
   notebooks/
     mtools_01_domain_selection.ipynb
-    mtools_02_storm_catalog_maps.ipynb
-    mtools_03_ibtracs_screening.ipynb
+    mtools_02_storm_catalog_consistency.ipynb
+    mtools_03_storm_catalog_maps.ipynb
+    mtools_04_ibtracs_screening.ipynb
   outputs/
     01_domain_selection/
-    02_storm_catalog_maps/
-    03_ibtracs_screening/
+    02_storm_catalog_consistency/
+    03_storm_catalog_maps/
+    04_ibtracs_screening/
     na14/
   Scripts/
     Atlas14_Pipeline/

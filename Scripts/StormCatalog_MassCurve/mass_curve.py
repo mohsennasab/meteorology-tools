@@ -24,7 +24,7 @@ import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
-import rioxarray  # noqa: F401 — registers .rio accessor
+import rioxarray  # noqa: F401; registers the .rio accessor
 import xarray as xr
 from shapely.affinity import translate
 
@@ -42,9 +42,8 @@ DEFAULT_DURATIONS = ["3hr-events", "6hr-events", "12hr-events", "24hr-events", "
 # USER INPUTS - EDIT THIS BLOCK, THEN RUN THE SCRIPT
 # =============================================================================
 #
-# This script is meant to be run directly from your Python editor or IDE.
-# Update the values below to match the catalog and watershed files on your
-# machine, then press Run. No command-line arguments are needed.
+# Run this script from a Python editor or IDE. Set the catalog and watershed
+# paths below, then press Run. The script does not use command-line arguments.
 
 # Folder that contains the storm catalog duration folders, such as:
 #   3hr-events/
@@ -237,7 +236,7 @@ def plot_mass_curves(
     fig.text(0.5, 0.918, subtitle, ha="center", va="center", fontsize=15)
     ax1.set_ylim(bottom=0)
 
-    # End-of-line totals — annotate just inside the right edge
+    # Add totals inside the right edge.
     final_pt = point_cumulative.iloc[-1]
     final_ar = areal_cumulative.iloc[-1]
     plot_start = pd.Timestamp(start_dt)
@@ -316,7 +315,7 @@ def plot_mass_curves(
 
 
 def _update_item_asset(item_path: str, png_filename: str) -> None:
-    """Add mass_curve PNG as a STAC asset by directly editing the item JSON."""
+    """Add the mass-curve PNG to the item JSON as a STAC asset."""
     with open(item_path) as f:
         item_dict = json.load(f)
     item_dict.setdefault("assets", {})["mass_curve"] = {
@@ -480,11 +479,11 @@ def run(
                     skipped += 1
                 else:
                     failed += 1
-                    logger.error(f"Failed: {result['item_path']} — {result['error']}")
+                    logger.error(f"Failed: {result['item_path']}: {result['error']}")
 
         batch_end = min(batch_start + batch_size, total)
         logger.info(
-            f"Batch {batch_start}–{batch_end}: {done} done, {skipped} skipped, {failed} failed "
+            f"Batch {batch_start}-{batch_end}: {done} done, {skipped} skipped, {failed} failed "
             f"({done + skipped + failed}/{total} total)"
         )
         gc.collect()
@@ -493,7 +492,7 @@ def run(
 
 
 def validate_user_inputs() -> None:
-    """Fail early with clear messages when the editable input block is not ready."""
+    """Validate the editable input block before processing."""
     if not Path(CATALOG_DIR).is_dir():
         raise FileNotFoundError(f"CATALOG_DIR does not exist or is not a folder: {CATALOG_DIR}")
     if not Path(BASE_WATERSHED_PATH).is_file():
