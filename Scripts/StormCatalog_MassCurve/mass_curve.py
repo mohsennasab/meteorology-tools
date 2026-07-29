@@ -24,7 +24,9 @@ import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
-import rioxarray  # noqa: F401; registers the .rio accessor
+
+# Import rioxarray to register the .rio accessor.
+import rioxarray  # noqa: F401
 import xarray as xr
 from shapely.affinity import translate
 
@@ -35,7 +37,14 @@ AORC_PRECIP_VARIABLE = "APCP_surface"
 MM_TO_INCH_CONVERSION_FACTOR = 0.0393701
 
 # Standard duration folders used by StormCatalog outputs.
-DEFAULT_DURATIONS = ["3hr-events", "6hr-events", "12hr-events", "24hr-events", "48hr-events", "72hr-events"]
+DEFAULT_DURATIONS = [
+    "3hr-events",
+    "6hr-events",
+    "12hr-events",
+    "24hr-events",
+    "48hr-events",
+    "72hr-events",
+]
 
 
 # =============================================================================
@@ -60,7 +69,17 @@ CATALOG_DIR = Path("/workspaces/meteorology-tools/inputs/storm_catalog")
 
 # Base watershed GeoJSON used to transpose the watershed to each storm location.
 # This must be the same base watershed used when the storm catalog was created.
-BASE_WATERSHED_PATH = Path("/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson")
+BASE_WATERSHED_PATH = Path(
+    "/workspaces/meteorology-tools/inputs/watershed/Upper-Tennessee_huc04.geojson"
+)
+
+# Optional folder for mass-curve outputs. Use None to save each PNG beside its
+# item JSON. When this path is set, all PNGs are saved directly in the folder.
+OUTPUT_DIR: Optional[Path] = None
+
+# Set to True only when PNGs are saved beside the item JSON files. This adds a
+# mass_curve asset to each item. Keep it False for a separate output folder.
+REGISTER_ASSETS = True
 
 # Duration folders to process. Use only folders that exist under CATALOG_DIR.
 # Examples:
@@ -81,11 +100,13 @@ PROCESS_LIMIT = None
 # or if the machine is memory constrained.
 NUM_WORKERS = 8
 BATCH_SIZE = 32
+PLOT_DPI = 150
 
 
 matplotlib.use("Agg")
 plt.rcParams.update(
     {
+        "font.family": "Arial",
         "font.size": 18,
         "axes.titlesize": 18,
         "axes.labelsize": 18,
@@ -94,7 +115,9 @@ plt.rcParams.update(
     }
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -111,7 +134,9 @@ def apply_aorc_transform(
 ) -> gpd.GeoDataFrame:
     """Return a copy of base_watershed_gdf with all geometries shifted by (c, f) degrees."""
     shifted = base_watershed_gdf.copy()
-    shifted["geometry"] = shifted.geometry.apply(lambda g: translate(g, xoff=transform_c, yoff=transform_f))
+    shifted["geometry"] = shifted.geometry.apply(
+        lambda g: translate(g, xoff=transform_c, yoff=transform_f)
+    )
     return shifted
 
 
@@ -125,11 +150,13 @@ def fetch_precip_timeseries(
     Adjusts start_dt by +1hr because AORC timestamps are period-ending.
     Returns a lazy DataArray in mm (not yet materialized).
     """
-    
+
     fetch_start = start_dt.replace(tzinfo=None) + timedelta(hours=1)
     fetch_end = end_dt.replace(tzinfo=None)
     s3_paths = get_aorc_paths(fetch_start, fetch_end)
-    ds = get_s3_zarr_data(s3_paths, aoi_gdf, fetch_start, fetch_end, [AORC_PRECIP_VARIABLE])
+    ds = get_s3_zarr_data(
+        s3_paths, aoi_gdf, fetch_start, fetch_end, [AORC_PRECIP_VARIABLE]
+    )
     return ds[AORC_PRECIP_VARIABLE]
 
 
@@ -171,13 +198,14 @@ def plot_mass_curves(
     start_dt: datetime,
     end_dt: datetime,
     output_path: str,
+    plot_dpi: int = 150,
 ) -> str:
     """Create and save a stacked-panel mass curve figure. Returns output_path.
 
     Top panel: accumulated precipitation lines (point + areal).
     Bottom panel: hourly precipitation bars (point + areal), side-by-side.
     """
-    title = f"Storm {item_id} | {duration_hours}-hour Precipitation Mass Curve"
+    title = f"Rank {item_id}: {duration_hours}-Hour Precipitation Mass Curve"
     subtitle = (
         f"{start_dt.strftime('%b %d, %Y %H:%M')} - "
         f"{end_dt.strftime('%b %d, %Y %H:%M')} UTC"
@@ -191,7 +219,7 @@ def plot_mass_curves(
         gridspec_kw={"height_ratios": [1.0, 1.0], "hspace": 0.14},
     )
 
-    # Side-by-side bars: 20 min wide each, offset ±10 min
+    # Place 20-minute bars side by side with a 10-minute offset.
     bar_w = 20 / 60 / 24  # days (matplotlib date units)
     half_w = bar_w / 2
     x = mdates.date2num(point_hourly.index.to_pydatetime())
@@ -202,7 +230,7 @@ def plot_mass_curves(
         width=bar_w,
         color="steelblue",
         alpha=0.55,
-        label="Hourly peak AORC grid cell precip",
+        label="Hourly max AORC grid cell precipitation",
     )
     b2 = ax2.bar(
         x + half_w,
@@ -216,14 +244,14 @@ def plot_mass_curves(
     ax2.set_ylim(bottom=0)
 
     # Cumulative lines on top axis.
-    l1, = ax1.plot(
+    (l1,) = ax1.plot(
         point_cumulative.index,
         point_cumulative.values,
         color="steelblue",
         linewidth=3,
-        label="Cumulative peak AORC grid cell precip",
+        label="Cumulative max AORC grid cell precipitation",
     )
-    l2, = ax1.plot(
+    (l2,) = ax1.plot(
         areal_cumulative.index,
         areal_cumulative.values,
         color="darkorange",
@@ -258,7 +286,7 @@ def plot_mass_curves(
     ax1.text(
         label_x,
         point_label_y,
-        f"Peak total: {final_pt:.2f} in",
+        f"Max grid-cell total: {final_pt:.2f} in",
         ha="right",
         va="center",
         color="steelblue",
@@ -309,7 +337,12 @@ def plot_mass_curves(
         handlelength=2.2,
     )
     fig.subplots_adjust(left=0.09, right=0.965, top=0.85, bottom=0.12)
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    fig.savefig(
+        output_path,
+        dpi=plot_dpi,
+        bbox_inches="tight",
+        facecolor="white",
+    )
     plt.close(fig)
     return output_path
 
@@ -328,27 +361,51 @@ def _update_item_asset(item_path: str, png_filename: str) -> None:
         json.dump(item_dict, f, indent=2)
 
 
+def mass_curve_output_path(
+    item_path: str,
+    item_id: str,
+    output_dir: Optional[str] = None,
+) -> Path:
+    """Return the PNG path for an item."""
+    png_filename = f"{item_id}.mass_curve.png"
+    if output_dir is None:
+        return Path(item_path).parent / png_filename
+    rank_token = f"{int(item_id):03d}" if str(item_id).isdigit() else str(item_id)
+    return Path(output_dir) / f"rank_{rank_token}.mass_curve.png"
+
+
 def generate_mass_curve_for_item(
     item_path: str,
     base_watershed_path: str,
     force: bool = False,
+    output_dir: Optional[str] = None,
+    register_asset: bool = True,
+    plot_dpi: int = 150,
 ) -> Optional[str]:
-    """Generate a mass curve plot for one STAC item and register it as an asset.
+    """Generate a mass curve plot for one STAC item.
 
-    Returns the PNG path on success, None if the asset already exists (skip).
+    Returns the PNG path on success or None when the selected output exists.
     Raises on failure so the caller can record the error.
-    Pass force=True to overwrite an existing plot without modifying the JSON.
+    Set register_asset to add the PNG to the item JSON.
     """
     item_path = str(item_path)
 
     with open(item_path) as f:
         item_dict = json.load(f)
 
-    already_done = "mass_curve" in item_dict.get("assets", {})
+    item_id = item_dict["id"]
+    has_asset = "mass_curve" in item_dict.get("assets", {})
+    output_path = mass_curve_output_path(
+        item_path=item_path,
+        item_id=item_id,
+        output_dir=output_dir,
+    )
+    already_done = output_path.is_file()
+    if output_dir is None:
+        already_done = already_done or has_asset
     if already_done and not force:
         return None
 
-    item_id = item_dict["id"]
     props = item_dict["properties"]
     start_dt = datetime.fromisoformat(props["start_datetime"].replace("Z", "+00:00"))
     end_dt = datetime.fromisoformat(props["end_datetime"].replace("Z", "+00:00"))
@@ -369,8 +426,7 @@ def generate_mass_curve_for_item(
     del da
     gc.collect()
 
-    png_filename = f"{item_id}.mass_curve.png"
-    output_path = str(Path(item_path).parent / png_filename)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     plot_mass_curves(
         point_hourly,
         point_cumulative,
@@ -380,16 +436,22 @@ def generate_mass_curve_for_item(
         duration_hours,
         start_dt,
         end_dt,
-        output_path,
+        str(output_path),
+        plot_dpi=plot_dpi,
     )
-    if not already_done:
-        _update_item_asset(item_path, png_filename)
+    if register_asset and not has_asset:
+        _update_item_asset(item_path, output_path.name)
 
     logger.info(f"Generated mass curve for item {item_id} ({duration_hours}hr)")
-    return output_path
+    return str(output_path)
 
 
-def discover_pending_items(catalog_dir: str, durations: list[str], force: bool = False) -> list[dict]:
+def discover_pending_items(
+    catalog_dir: str,
+    durations: list[str],
+    force: bool = False,
+    output_dir: Optional[str] = None,
+) -> list[dict]:
     """Scan duration folders and return items to process.
 
     Without force, skips items that already have the mass_curve asset.
@@ -416,8 +478,19 @@ def discover_pending_items(catalog_dir: str, durations: list[str], force: bool =
                 logger.warning(f"Could not read {item_path}")
                 continue
             has_asset = "mass_curve" in item_dict.get("assets", {})
-            if force or not has_asset:
-                pending.append({"item_path": item_path, "item_id": entry.name, "duration": duration})
+            item_id = str(item_dict.get("id", entry.name))
+            output_path = mass_curve_output_path(
+                item_path=item_path,
+                item_id=item_id,
+                output_dir=output_dir,
+            )
+            finished = output_path.is_file()
+            if output_dir is None:
+                finished = finished or has_asset
+            if force or not finished:
+                pending.append(
+                    {"item_path": item_path, "item_id": item_id, "duration": duration}
+                )
     return pending
 
 
@@ -425,7 +498,14 @@ def _worker(args: dict) -> dict:
     """Worker function to process a single item."""
     item_path = args["item_path"]
     try:
-        result = generate_mass_curve_for_item(item_path, args["base_watershed_path"], force=args["force"])
+        result = generate_mass_curve_for_item(
+            item_path,
+            args["base_watershed_path"],
+            force=args["force"],
+            output_dir=args["output_dir"],
+            register_asset=args["register_assets"],
+            plot_dpi=args["plot_dpi"],
+        )
         outcome = "skipped" if result is None else "success"
         return {"item_path": item_path, "outcome": outcome, "error": None}
     except Exception as e:
@@ -440,6 +520,9 @@ def run(
     limit: int = None,
     force: bool = False,
     durations: list = None,
+    output_dir: Optional[str] = None,
+    register_assets: bool = True,
+    plot_dpi: int = 150,
 ) -> None:
     """Generate mass curves for all items in a storm catalog.
 
@@ -451,8 +534,29 @@ def run(
         limit: Process only the first N pending items.
         force: Regenerate plots even if mass_curve asset already exists.
         durations: Duration folders to process (default: all standard durations).
+        output_dir: Optional root folder for PNG outputs.
+        register_assets: Add mass_curve assets to item JSON files.
+        plot_dpi: PNG resolution in dots per inch.
     """
-    pending = discover_pending_items(catalog_dir, durations or DEFAULT_DURATIONS, force=force)
+    if output_dir is not None and register_assets:
+        raise ValueError("register_assets must be False when output_dir is set.")
+    selected_durations = durations or DEFAULT_DURATIONS
+    if output_dir is not None and len(selected_durations) != 1:
+        raise ValueError("A separate output folder requires one duration folder per run.")
+    catalog_root = Path(catalog_dir).resolve()
+    logger.info(f"Storm catalog root: {catalog_root}")
+    for duration in selected_durations:
+        logger.info(f"Storm catalog used: {(catalog_root / duration).resolve()}")
+    logger.info(f"Base watershed path: {Path(base_watershed_path).resolve()}")
+    if output_dir is not None:
+        logger.info(f"Output directory: {Path(output_dir).resolve()}")
+    logger.info(f"Duration folders: {', '.join(selected_durations)}")
+    pending = discover_pending_items(
+        catalog_dir,
+        selected_durations,
+        force=force,
+        output_dir=output_dir,
+    )
     if limit:
         pending = pending[:limit]
     total = len(pending)
@@ -465,7 +569,14 @@ def run(
     done = skipped = failed = 0
     for batch_start in range(0, total, batch_size):
         batch = [
-            dict(item, base_watershed_path=base_watershed_path, force=force)
+            dict(
+                item,
+                base_watershed_path=base_watershed_path,
+                force=force,
+                output_dir=output_dir,
+                register_assets=register_assets,
+                plot_dpi=plot_dpi,
+            )
             for item in pending[batch_start : batch_start + batch_size]
         ]
 
@@ -494,12 +605,24 @@ def run(
 def validate_user_inputs() -> None:
     """Validate the editable input block before processing."""
     if not Path(CATALOG_DIR).is_dir():
-        raise FileNotFoundError(f"CATALOG_DIR does not exist or is not a folder: {CATALOG_DIR}")
+        raise FileNotFoundError(
+            f"CATALOG_DIR does not exist or is not a folder: {CATALOG_DIR}"
+        )
     if not Path(BASE_WATERSHED_PATH).is_file():
-        raise FileNotFoundError(f"BASE_WATERSHED_PATH does not exist or is not a file: {BASE_WATERSHED_PATH}")
+        raise FileNotFoundError(
+            f"BASE_WATERSHED_PATH does not exist or is not a file: {BASE_WATERSHED_PATH}"
+        )
     if not DURATIONS_TO_PROCESS:
         raise ValueError("DURATIONS_TO_PROCESS must list at least one duration folder.")
-    missing = [duration for duration in DURATIONS_TO_PROCESS if not (Path(CATALOG_DIR) / duration).is_dir()]
+    if OUTPUT_DIR is not None and REGISTER_ASSETS:
+        raise ValueError("REGISTER_ASSETS must be False when OUTPUT_DIR is set.")
+    if PLOT_DPI <= 0:
+        raise ValueError("PLOT_DPI must be greater than zero.")
+    missing = [
+        duration
+        for duration in DURATIONS_TO_PROCESS
+        if not (Path(CATALOG_DIR) / duration).is_dir()
+    ]
     if missing:
         raise FileNotFoundError(
             "These duration folders were not found under CATALOG_DIR: "
@@ -518,6 +641,9 @@ def main():
         limit=PROCESS_LIMIT,
         force=REGENERATE_EXISTING,
         durations=DURATIONS_TO_PROCESS,
+        output_dir=str(OUTPUT_DIR) if OUTPUT_DIR is not None else None,
+        register_assets=REGISTER_ASSETS,
+        plot_dpi=PLOT_DPI,
     )
 
 
