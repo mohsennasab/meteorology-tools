@@ -1,0 +1,11 @@
+# Needed for the seasonality plots and the QC maps. The catalog builder,
+# the classifier, and the programmatic QC checks run on the Python
+# standard library alone.
+matplotlib>=3.5
+numpy>=1.21
+
+# Optional. If installed, classify_storms.py and qc_storm_typing.py use one
+# of these to read the IBTrACS attribute table; otherwise they fall back to
+# a built-in DBF reader.
+# geopandas>=0.12
+# dbfread>=2.0
