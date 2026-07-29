@@ -179,8 +179,8 @@ The `.grid` file stores absolute DSS paths. If the DSS folder is moved or rename
 
 The naming and delivery rules were taken from:
 
-- `Appendix B - 06. Standard Naming Conventions.md`, Job Aid 6
-- `Appendix B - 03. Meteorologic Data Processes.md`, Job Aid 3
+- `06. Standard Naming Conventions`, Job Aid 6
+- `03. Meteorologic Data Processes`, Job Aid 3
 
 These files are in:
 
