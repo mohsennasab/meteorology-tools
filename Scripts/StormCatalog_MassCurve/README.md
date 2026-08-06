@@ -172,6 +172,20 @@ Review a rank when one or more of these conditions appears:
 
 An isolated max-grid-cell spike or a large blue-to-orange difference can represent a real localized storm. Treat it as a review flag. Check the AORC raster, storm footprint, watershed translation, nearby observations, and event metadata before rejecting or changing the event.
 
+## South Platte Example
+
+![Rank 373 72-hour precipitation mass curve](assets/rank_373.mass_curve.png)
+
+This example is Rank 373 from the South Platte 72-hour catalog. The event starts September 17, 2025 at 00:00 UTC and ends September 20, 2025 at 00:00 UTC.
+
+The max grid-cell total is 54.39 inches and the watershed-mean total is 1.23 inches. The blue cumulative line is flat through September 17 and 18, then rises sharply in two bursts during September 19. The orange cumulative line stays near zero for the full event, indicating that the heavy precipitation did not reach most of the transposed watershed.
+
+The hourly bars show the same two-burst structure: one cluster beginning around September 19 00:00 UTC and a second around September 19 12:00 UTC, with hourly max grid-cell values reaching 11-13 inches per hour. The watershed-mean bars are nearly invisible against this scale.
+
+The large difference between the blue and orange totals (54.39 vs 1.23 inches) and the absence of watershed-mean response are flags for anomaly review. This pattern meets two criteria from the Anomaly Checks section: the max grid-cell cumulative curve is much larger than the watershed-mean curve, and the watershed mean is near zero while the max AORC grid cell receives substantial precipitation.
+
+Both the event total and the hourly rates are physically unrealistic for the South Platte. A 72-hour total of 54.39 inches far exceeds any recorded precipitation in the region. Hourly rates of 11-13 inches per hour are not physically plausible at this location and duration. These values indicate a data error in the AORC source, a misapplied watershed translation placing the domain over a bad grid cell, or a corrupt item record. This event should be rejected or corrected before use.
+
 ## Notes
 
 - The script retrieves AORC data from S3, so network access is required.
