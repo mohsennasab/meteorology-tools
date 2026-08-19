@@ -9,6 +9,7 @@ dependencies:
   - numpy=2.5.1
   - pandas=3.0.3
   - scipy=1.18.0
+  - openpyxl=3.1.5
   - geopandas=1.1.4
   - shapely=2.1.2
   - geos=3.14.1
