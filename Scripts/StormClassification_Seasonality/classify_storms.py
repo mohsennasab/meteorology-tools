@@ -131,13 +131,16 @@ def gap_hours(event_start, event_end, span_start, span_end):
 
 def to_number(value, default):
     """Coerce a DBF field to a number. Different readers return different
-    types (int, float, string, None), so normalize here."""
+    types (int, float, string, None), so normalize here. Missing numeric DBF
+    values may also arrive from GeoPandas as NaN, which must use the default
+    before callers convert the result to an integer."""
     if value is None or value == "":
         return default
     try:
-        return float(value)
+        number = float(value)
     except (ValueError, TypeError):
         return default
+    return number if math.isfinite(number) else default
 
 
 # ---------------------------------------------------------------------------
