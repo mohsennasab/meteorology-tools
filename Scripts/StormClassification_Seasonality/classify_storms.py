@@ -34,7 +34,7 @@ Why the script does its own spatial match:
     (Smith et al. 2011; Evans et al. 2017).
 
 Inputs : output/storm_catalog.csv          (from build_storm_catalog.py)
-         input/IBTrACS_*.shp + .dbf        (full since-1980 track file)
+         input/IBTrACS_*.points.shp + .dbf (full since-1980 points file)
 Outputs: output/classified_storms.csv
          output/classification_summary.txt
          output/classification_metadata.json
@@ -66,11 +66,13 @@ from pathlib import Path
 # Storm catalog CSV from step 1.
 CATALOG_CSV = r"output\storm_catalog.csv"
 
-# IBTrACS since-1980 lines shapefile. This can be the full, unclipped file:
-# the script does the spatial matching itself, so no GIS clip is needed. The
-# track coordinates (LAT, LON) and the .dbf attributes are both read, so the
-# .dbf must sit next to the .shp.
-IBTRACS_SHP = r"input\IBTrACS_since1980_list_v4r01.shp"
+# IBTrACS since-1980 points shapefile (IBTrACS.since1980.list.v04r01.points).
+# This can be the full, unclipped file: the script does the spatial matching
+# itself, so no GIS clip is needed. Each track fix is one record, and its time
+# and position (ISO_TIME, LAT, LON) are read from the .dbf, so the .dbf must sit
+# next to the .shp. Do not use the lines shapefile: its attributes describe the
+# start of each segment, so the final fix of every track is missing.
+IBTRACS_SHP = r"input\IBTrACS.since1980.list.v04r01.points.shp"
 
 # Output directory.
 OUTPUT_DIR = r"output"
@@ -131,13 +133,16 @@ def gap_hours(event_start, event_end, span_start, span_end):
 
 def to_number(value, default):
     """Coerce a DBF field to a number. Different readers return different
-    types (int, float, string, None), so normalize here."""
+    types (int, float, string, None), so normalize here. Missing numeric DBF
+    values may also arrive from GeoPandas as NaN, which must use the default
+    before callers convert the result to an integer."""
     if value is None or value == "":
         return default
     try:
-        return float(value)
+        number = float(value)
     except (ValueError, TypeError):
         return default
+    return number if math.isfinite(number) else default
 
 
 # ---------------------------------------------------------------------------
@@ -184,12 +189,46 @@ def read_dbf_builtin(dbf_path):
     return records
 
 
+POINT_SHAPE_TYPES = {1: "Point", 11: "PointZ", 21: "PointM"}
+SHAPE_TYPE_NAMES = {3: "PolyLine", 5: "Polygon", 8: "MultiPoint", 13: "PolyLineZ",
+                    15: "PolygonZ", 18: "MultiPointZ", 23: "PolyLineM",
+                    25: "PolygonM", 28: "MultiPointM", 31: "MultiPatch"}
+
+
+def shapefile_shape_type(shp_path):
+    """Shape type code from the .shp file header (bytes 32-35, little endian)."""
+    with open(shp_path, "rb") as f:
+        header = f.read(36)
+    if len(header) < 36:
+        sys.exit(f"ERROR: {shp_path} is not a valid shapefile (header too short)")
+    return struct.unpack("<i", header[32:36])[0]
+
+
+def require_points_shapefile(shp_path):
+    """Stop unless the IBTrACS input is the points shapefile.
+
+    The IBTrACS lines shapefile stores one record per segment, and its
+    attributes (ISO_TIME, LAT, LON) describe the segment start. The last fix of
+    every track exists only as the end vertex of the final segment, with no
+    time attached, so reading the attributes silently drops it."""
+    shape_type = shapefile_shape_type(shp_path)
+    if shape_type in POINT_SHAPE_TYPES:
+        return
+    name = SHAPE_TYPE_NAMES.get(shape_type, f"type {shape_type}")
+    sys.exit(
+        f"ERROR: {shp_path} has {name} geometry. Use the IBTrACS points shapefile "
+        "(IBTrACS.since1980.list.v04r01.points.shp). A lines shapefile drops the "
+        "final fix of every track because its attributes describe segment starts."
+    )
+
+
 def load_ibtracs(shp_path, log):
     """Load the IBTrACS attribute table, grouped by storm id (SID)."""
     shp_path = Path(shp_path)
     dbf_path = shp_path.with_suffix(".dbf")
     if not dbf_path.exists():
         sys.exit(f"ERROR: {dbf_path} not found (must sit next to the .shp)")
+    require_points_shapefile(shp_path)
 
     records = None
     try:
@@ -225,6 +264,13 @@ def load_ibtracs(shp_path, log):
 # ---------------------------------------------------------------------------
 # Track fixes and storm characterization
 # ---------------------------------------------------------------------------
+def to_text(value):
+    """Coerce a DBF text field to a stripped string, with None and NaN as ''."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return ""
+    return str(value).strip()
+
+
 def track_fixes(recs):
     """One tuple per parseable track fix, sorted in time.
 
@@ -239,8 +285,8 @@ def track_fixes(recs):
             lat, lon = float(r["LAT"]), float(r["LON"])
         except (ValueError, TypeError, KeyError):
             continue
-        status = str(r.get("USA_STATUS", "")).strip()
-        nature = str(r.get("NATURE", "")).strip()
+        status = to_text(r.get("USA_STATUS"))
+        nature = to_text(r.get("NATURE"))
         wind = int(to_number(r.get("USA_WIND"), 0))
         sshs = int(to_number(r.get("USA_SSHS"), -5))
         fixes.append((ts, lat, lon, status, nature, wind, sshs))

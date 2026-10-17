@@ -37,7 +37,7 @@ Two layers of QC, run together:
      RANK###_BORDERLINE_NT_<date>.png
 
 Inputs : output/classified_storms.csv      (from classify_storms.py)
-         input/IBTrACS_*.shp + .dbf        (same full file used in step 2)
+         input/IBTrACS_*.points.shp + .dbf (same full points file used in step 2)
          input/transposition_domain.geojson (optional, for map outline)
          input/watershed.geojson            (optional, for map outline)
          input/basemap/land.geojson         (optional, faded basemap)
@@ -63,7 +63,7 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from classify_storms import load_ibtracs, summarize_storm
+from classify_storms import load_ibtracs, summarize_storm, to_text
 
 # ===========================================================================
 # USER SETTINGS
@@ -73,8 +73,8 @@ from classify_storms import load_ibtracs, summarize_storm
 # Classified catalog from step 2.
 CLASSIFIED_CSV = r"output\classified_storms.csv"
 
-# The same full IBTrACS shapefile used by classify_storms.py.
-IBTRACS_SHP = r"input\IBTrACS_since1980_list_v4r01.shp"
+# The same full IBTrACS points shapefile used by classify_storms.py.
+IBTRACS_SHP = r"input\IBTrACS.since1980.list.v04r01.points.shp"
 
 # Transposition domain and watershed polygons (GeoJSON). Both are optional
 # and only drawn on the maps. Leave blank to skip them.
@@ -228,7 +228,7 @@ def track_points(records):
             lat, lon = float(r["LAT"]), float(r["LON"])
         except (ValueError, TypeError, KeyError):
             continue
-        pts.append((ts, lat, lon, str(r.get("USA_STATUS", "")).strip()))
+        pts.append((ts, lat, lon, to_text(r.get("USA_STATUS"))))
     return sorted(pts, key=lambda p: p[0])
 
 
