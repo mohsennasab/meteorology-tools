@@ -57,7 +57,9 @@ If an event folder has no item JSON, `build_storm_catalog.py` can use the matchi
 
 ### IBTrACS tracks
 
-Use the full NOAA IBTrACS v04r01 since-1980 lines shapefile. Keep the `.dbf`, `.shx`, and other shapefile components beside the `.shp`. The large IBTrACS files are not stored in this repository.
+Use the full NOAA IBTrACS v04r01 since-1980 points shapefile, `IBTrACS.since1980.list.v04r01.points.shp`, from <https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/shapefile/IBTrACS.since1980.list.v04r01.points.zip>. Keep the `.dbf`, `.shx`, and other shapefile components beside the `.shp`. The large IBTrACS files are not stored in this repository.
+
+Do not use the lines shapefile. Each line record describes the start of a segment between two fixes, so the final fix of every track has no record. Matching against the lines attributes misses a storm whose closest approach to the rainfall maximum is its last fix. The scripts stop with an error when the input does not have point geometry.
 
 The classifier applies its own distance test. Do not clip the IBTrACS tracks to the transposition domain.
 
@@ -98,7 +100,7 @@ The script copies one row per ranked event. It does not aggregate, round, or res
 ```powershell
 python classify_storms.py `
   --catalog "C:\project\results\Storm_Classification_Seasonality\storm_catalog.csv" `
-  --ibtracs "C:\project\IBTrACS\IBTrACS_since1980_list_v4r01.shp" `
+  --ibtracs "C:\project\IBTrACS\IBTrACS.since1980.list.v04r01.points.shp" `
   --output-dir "C:\project\results\Storm_Classification_Seasonality"
 ```
 
@@ -126,7 +128,7 @@ Do not rerun `classify_storms.py` after manual review begins. It will replace th
 ```powershell
 python qc_storm_typing.py `
   --classified "C:\project\results\Storm_Classification_Seasonality\classified_storms.csv" `
-  --ibtracs "C:\project\IBTrACS\IBTrACS_since1980_list_v4r01.shp" `
+  --ibtracs "C:\project\IBTrACS\IBTrACS.since1980.list.v04r01.points.shp" `
   --domain "C:\project\results\selected_transposition_domain.geojson" `
   --watershed "C:\project\inputs\watershed.geojson" `
   --basemap-dir "assets\basemap" `
@@ -243,7 +245,7 @@ Use the same values in classification and QC:
 |---|---|---|---:|
 | Temporal allowance | `--window` | `--window` | 1 day |
 | Matching radius | `--radius` | `--distance-km` | 500 km |
-| IBTrACS shapefile | `--ibtracs` | `--ibtracs` | Same full archive |
+| IBTrACS points shapefile | `--ibtracs` | `--ibtracs` | Same full archive |
 
 Changing these settings changes the method and may change classifications. Record any change in the project methods documentation.
 
