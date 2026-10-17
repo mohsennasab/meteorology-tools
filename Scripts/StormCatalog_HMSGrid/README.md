@@ -8,6 +8,7 @@ The source catalog is read only. The script does not rename, move, or edit any s
 
 - `prepare_hms_grid_import.py` runs the full workflow.
 - `generate_hms_grid.py` calculates storm centers and writes the HEC-HMS grid manager file.
+- `HmsStormCenter.java` computes storm centers with HEC-HMS's own code. `generate_hms_grid.py` compiles and runs it.
 - `requirements.txt` lists the tested Python packages.
 
 The grid generation code was brought into this repository from:
@@ -87,6 +88,13 @@ python -m pip install -r .\requirements.txt
 
 The tested requirements are `hecdss==0.1.29` and `numpy==2.3.2`.
 
+Storm centers come from HEC-HMS by default, which also needs:
+
+- **HEC-HMS 4.13** installed. The default folder is `C:\Program Files\HEC\HEC-HMS\4.13`; use `--hms-dir` for another location. The script uses the HMS `hms.jar`, the `lib` folder, the bundled `jre`, and the native DSS library in `bin`.
+- **A JDK 17 or later** for `javac`. The HMS JRE cannot compile Java source. The script looks for `javac` in `JAVA_HOME`, then on `PATH`; use `--javac` to point to it directly. The compiled class is written to a temporary folder and removed after the run.
+
+Use `--center-method python` to skip HEC-HMS and use the Python calculation only.
+
 ## Run the full workflow
 
 ```powershell
@@ -138,21 +146,56 @@ hms-grid-import
 
 `hms_grid_import.log` records the source catalog, verified classification file, destination DSS folder, file counts, byte totals, filename fields, and elapsed time.
 
-`hms_grid_generation.log` records the grid record processing and the calculated storm center for every DSS file.
+`hms_grid_generation.log` records the grid record processing, the Python storm center for every DSS file, the HEC-HMS run, and every tie or mismatch between the two.
 
 The `.grid` file contains one HEC-HMS Grid block per copied DSS file. Each block includes the grid name, storm center X and Y, absolute DSS filename, and DSS pathname.
 
-`storm_center_verification.csv` selects representative high, middle, and low ranked TC and NT storms. It includes the calculated X and Y values and blank fields for the values observed in HEC-HMS.
+`storm_center_verification.csv` has one row per storm:
+
+| Field | Content |
+|---|---|
+| `rank`, `classification`, `dss_filename`, `grid_name` | storm identity |
+| `storm_center_x`, `storm_center_y` | the value written to the `.grid` file |
+| `center_source` | `HEC-HMS` or `Python` |
+| `hms_max_total`, `hms_cells_at_max` | maximum total and number of cells with that exact value in HEC-HMS |
+| `python_center_x`, `python_center_y`, `python_max_total` | the Python cross-check |
+| `python_cells_near_max` | cells within `--tie-tolerance` of the maximum (default 0.05, in DSS units) |
+| `center_check` | `match`, `tie`, `mismatch`, or `python` |
+
+The script confirms that every `.grid` center equals the value in this file.
 
 ## Storm center method
 
-For each DSS file, the grid generator:
+The storm center is the center of the SHG cell with the largest 72-hour total anywhere in the DSS grid, which covers the transposition domain. This follows Job Aid 3 ("the center of the pixel where the maximum total accumulation of rainfall occurred") and is the same value as the HEC-HMS **Compute Storm Center** button.
+
+It is not the same point as StormHub's `aorc:max_precip_location`, which is the largest cell inside the transposed watershed. The two differ when the wettest cell of the storm lies outside the watershed.
+
+### HEC-HMS centers (default)
+
+`HmsStormCenter.java` runs the HEC-HMS 4.13 storm center routine (`hms.model.met.e.K`) with the libraries installed with HEC-HMS:
+
+1. Read the total precipitation for the full record with the Vortex `TemporalDataReader` that HEC-HMS uses for gridsets.
+2. Keep the first cell with the largest total (strict `>` from `Float.MIN_VALUE`).
+3. Convert that cell to its center with the HEC-HMS grid definition: `originX + (col + 0.5) dx`, `originY + (row + 0.5) dy`.
+
+These coordinates are written to the `.grid` file.
+
+### Python cross-check
+
+For each DSS file the Python code also:
 
 1. Selects records that match the A, B, C, and F pathname filters.
 2. Adds the precipitation grids through the event period.
 3. Finds the cell with the largest accumulated precipitation.
-4. Converts the row and column to the center of the SHG cell using the DSS grid metadata.
-5. Writes that SHG coordinate as `Storm Center X` and `Storm Center Y`.
+4. Converts the row and column to the center of the SHG cell using the DSS grid metadata (row 0 is the south edge).
+
+Each storm is then marked:
+
+- `match`: HEC-HMS and Python select the same cell.
+- `tie`: the HEC-HMS cell is one of the Python cells within `--tie-tolerance` of the maximum. AORC totals are stored to 0.1 mm, so two cells can have the same total. HEC-HMS keeps the first one in its own order, so the `.grid` value is the cell HEC-HMS would compute.
+- `mismatch`: the HEC-HMS cell is not among the Python maximum cells. The `.grid` file is still written, the run ends with an error, and the storm must be investigated.
+
+If HEC-HMS cannot be run, no `.grid` file is written.
 
 The HMS pathname removes the dated D and E parts. For Upper Tennessee, the expected pathname is:
 
@@ -160,18 +203,9 @@ The HMS pathname removes the dated D and E parts. For Upper Tennessee, the expec
 /SHG1K/UPPER-TENNESSEE/PRECIPITATION///AORC/
 ```
 
-## Required HEC-HMS check
+### Optional spot check in HEC-HMS
 
-Verify the storm center coordinates before using the `.grid` file for a bulk import.
-
-1. Open `storm_center_verification.csv`.
-2. Manually import each listed DSS file into HEC-HMS.
-3. Record the storm center X and Y shown by HEC-HMS.
-4. Compare those values with `generated_storm_center_x` and `generated_storm_center_y`.
-5. Set `verification_status` to `pass` only when both coordinates match.
-6. Investigate any difference before importing the full grid file.
-
-The worksheet includes both TC and NT storms at different ranks. At minimum, confirm several storms that cover both storm types and more than one part of the ranked catalog.
+The HEC-HMS centers do not need a manual check. To see one in the interface, import a DSS file listed in `storm_center_verification.csv` as a precipitation gridset, press **Compute** next to Storm Center X and Y, and compare with `storm_center_x` and `storm_center_y`.
 
 The `.grid` file stores absolute DSS paths. If the DSS folder is moved or renamed, regenerate the `.grid` file so every `Filename` value points to the new location.
 

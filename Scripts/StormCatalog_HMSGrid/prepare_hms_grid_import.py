@@ -19,6 +19,8 @@ DEFAULT_F_PART = "AORC"
 DEFAULT_HMS_VERSION = "4.13"
 DEFAULT_COPY_WORKERS = 4
 DEFAULT_GRID_WORKERS = 6
+DEFAULT_CENTER_METHOD = "hms"
+DEFAULT_HMS_DIR = r"C:\Program Files\HEC\HEC-HMS\4.13"
 FILENAME_PATTERN = re.compile(
     r"^\d{8}_\d+hr_[a-z0-9-]+_r\d{3}\.dss$"
 )
@@ -104,6 +106,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--hms-version",
         default=DEFAULT_HMS_VERSION,
         help=f"HEC-HMS version written to the grid file. Default: {DEFAULT_HMS_VERSION}",
+    )
+    parser.add_argument(
+        "--center-method",
+        choices=("hms", "python"),
+        default=DEFAULT_CENTER_METHOD,
+        help=(
+            "Storm center source. hms: HEC-HMS's own code (HmsStormCenter.java) with a "
+            f"Python cross-check. python: Python only. Default: {DEFAULT_CENTER_METHOD}"
+        ),
+    )
+    parser.add_argument(
+        "--hms-dir",
+        type=Path,
+        default=Path(DEFAULT_HMS_DIR),
+        help=f"HEC-HMS installation folder. Default: {DEFAULT_HMS_DIR}",
+    )
+    parser.add_argument(
+        "--javac",
+        default=None,
+        help="javac from a JDK 17 or later. Default: JAVA_HOME, then PATH.",
     )
     parser.add_argument(
         "--copy-workers",
@@ -447,6 +469,7 @@ def run_grid_generator(
     dss_output_dir: Path,
     grid_file: Path,
     grid_log_file: Path,
+    center_report: Path,
     args: argparse.Namespace,
     logger: logging.Logger,
 ) -> None:
@@ -469,11 +492,19 @@ def run_grid_generator(
         args.hms_version,
         "--workers",
         str(max(1, args.grid_workers)),
+        "--center-method",
+        args.center_method,
+        "--hms-dir",
+        str(args.hms_dir),
+        "--center-report",
+        str(center_report),
     ]
     if args.a_part:
         command.extend(["--a-part", args.a_part])
     if args.b_part:
         command.extend(["--b-part", args.b_part])
+    if args.javac:
+        command.extend(["--javac", args.javac])
 
     logger.info("Starting HMS grid generation")
     logger.info("Grid generator: %s", script_file)
@@ -508,67 +539,45 @@ def read_grid_centers(grid_file: Path) -> dict[str, tuple[str, str]]:
     return centers
 
 
-def representative_storms(inventory: list[StormFile]) -> list[tuple[StormFile, str]]:
-    selected: dict[int, tuple[StormFile, str]] = {}
-    for classification in ("TC", "NT"):
-        storms = [storm for storm in inventory if storm.classification == classification]
-        if not storms:
-            continue
-        if len(storms) == 1:
-            storm = storms[0]
-            selected[storm.rank] = (storm, f"only {classification} storm")
-            continue
-        indices = [
-            (0, f"highest-ranked {classification} storm"),
-            (len(storms) // 2, f"middle-ranked {classification} storm"),
-            (len(storms) - 1, f"lowest-ranked {classification} storm"),
-        ]
-        for index, reason in indices:
-            storm = storms[index]
-            selected[storm.rank] = (storm, reason)
-    return [selected[rank] for rank in sorted(selected)]
-
-
 def write_verification_file(
     verification_file: Path,
     inventory: list[StormFile],
     grid_file: Path,
-) -> None:
+) -> dict[str, int]:
+    """Add rank and classification to the generator's storm center report.
+
+    Confirms each .grid Storm Center X/Y equals the report value and returns
+    the count of each center_check status."""
     centers = read_grid_centers(grid_file)
-    fields = [
-        "rank",
-        "classification",
-        "selection_reason",
-        "grid_name",
-        "dss_filename",
-        "generated_storm_center_x",
-        "generated_storm_center_y",
-        "hms_storm_center_x",
-        "hms_storm_center_y",
-        "verification_status",
-        "notes",
-    ]
-    with verification_file.open("w", encoding="utf-8-sig", newline="") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=fields)
-        writer.writeheader()
-        for storm, reason in representative_storms(inventory):
-            grid_name = storm.destination_file.stem
-            center_x, center_y = centers.get(grid_name, ("", ""))
-            writer.writerow(
-                {
-                    "rank": storm.rank,
-                    "classification": storm.classification,
-                    "selection_reason": reason,
-                    "grid_name": grid_name,
-                    "dss_filename": storm.destination_file.name,
-                    "generated_storm_center_x": center_x,
-                    "generated_storm_center_y": center_y,
-                    "hms_storm_center_x": "",
-                    "hms_storm_center_y": "",
-                    "verification_status": "pending",
-                    "notes": "",
-                }
+    with verification_file.open("r", encoding="utf-8-sig", newline="") as csv_file:
+        report = {row["grid_name"]: row for row in csv.DictReader(csv_file)}
+
+    rows: list[dict[str, str]] = []
+    counts: dict[str, int] = {}
+    for storm in inventory:
+        grid_name = storm.destination_file.stem
+        if grid_name not in report or grid_name not in centers:
+            raise RuntimeError(f"Storm center missing for {grid_name}")
+        row = report[grid_name]
+        if centers[grid_name] != (row["storm_center_x"], row["storm_center_y"]):
+            raise RuntimeError(
+                f"Grid file center {centers[grid_name]} differs from the report for {grid_name}"
             )
+        counts[row["center_check"]] = counts.get(row["center_check"], 0) + 1
+        rows.append(
+            {
+                "rank": str(storm.rank),
+                "classification": storm.classification,
+                "dss_filename": storm.destination_file.name,
+                **{key: value for key, value in row.items() if key != "dss_file"},
+            }
+        )
+
+    with verification_file.open("w", encoding="utf-8-sig", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    return counts
 
 
 def default_grid_filename(catalog_dir: Path) -> str:
@@ -669,13 +678,19 @@ def main(argv: list[str] | None = None) -> int:
                 dss_output_dir=dss_output_dir,
                 grid_file=grid_file,
                 grid_log_file=grid_log_file,
+                center_report=verification_file,
                 args=args,
                 logger=logger,
             )
-            write_verification_file(
+            center_counts = write_verification_file(
                 verification_file=verification_file,
                 inventory=copied,
                 grid_file=grid_file,
+            )
+            logger.info("Storm center source: %s", "HEC-HMS" if args.center_method == "hms" else "Python")
+            logger.info(
+                "Storm center checks: %s",
+                ", ".join(f"{count} {status}" for status, count in sorted(center_counts.items())),
             )
             logger.info("Storm center verification file: %s", verification_file)
 
