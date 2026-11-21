@@ -20,6 +20,12 @@ The repository supports these parts of the workflow:
 
 StormHub catalog creation is an input to this repository. It is not performed by one of the notebooks or scripts listed here. HEC-HMS review and import are also completed outside this repository.
 
+## FFRD SOP meteorology workflow
+
+The flowchart shows the meteorology steps of the Scoping and Data Preparation phase in the FFRD SOP (Version 1, December 2025). The tools in this repository support the storm catalog (SST) steps. The basin gridded data steps use HEC-Vortex and are outside this repository. Select the image to open it at full size.
+
+[![FFRD SOP meteorology workflow for the Scoping and Data Preparation phase](documents/images/meteorology_sop_flowchart.png)](documents/images/meteorology_sop_flowchart.png)
+
 ## Before starting
 
 1. Obtain the current FFRD meteorology SOP and project naming decisions.
